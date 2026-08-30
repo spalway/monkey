@@ -17,3 +17,6 @@ creator-wallet.json
 
 # Editor/session backups
 .bak-*
+
+# Mainnet program/collection authority. Real money. Never commit.
+mainnet-authority.json

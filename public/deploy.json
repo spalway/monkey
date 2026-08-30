@@ -13,5 +13,6 @@
     "COINx": "5tEix2xEXtr5j3R3ZuxmZgZBkcPPsY9FxvANrrSfTodP",
     "AVGOx": "5fV1B7YfeUFVzQw8ZRVtpRHxtkwaBTxjgyryhYcQknaQ"
   },
-  "stockDecimals": 6
+  "stockDecimals": 6,
+  "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
 }

@@ -123,9 +123,41 @@ async function serveStatic(res, urlPath) {
   }
 }
 
+/// Where JSON-RPC actually goes.
+///
+/// Server-side so the provider's API key never reaches a browser: anything the
+/// client can read, everyone can read. If it is unset the site has no chain to
+/// talk to at all, which is a louder and far better failure than silently
+/// falling back to a public node that will rate-limit under real traffic.
+const UPSTREAM_RPC = process.env.HELIUS_RPC ?? process.env.UPSTREAM_RPC ?? '';
+
+async function proxyRpc(req, res) {
+  if (!UPSTREAM_RPC) return send(res, 503, 'text/plain', 'no upstream rpc configured');
+
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+
+  try {
+    const upstream = await fetch(UPSTREAM_RPC, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: Buffer.concat(chunks),
+    });
+    const body = Buffer.from(await upstream.arrayBuffer());
+    return send(res, upstream.status, 'application/json', body);
+  } catch {
+    return send(res, 502, 'text/plain', 'rpc upstream unreachable');
+  }
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
   const path = decodeURIComponent(url.pathname);
+
+  if (path === '/rpc') {
+    if (req.method !== 'POST') return send(res, 405, 'text/plain', 'post only');
+    return proxyRpc(req, res);
+  }
 
   // Metadata and images are immutable for a given asset — the art is a pure
   // function of the address — so they can be cached hard.

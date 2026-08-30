@@ -10,13 +10,22 @@ const RAW = (import.meta.env?.VITE_CLUSTER ?? 'devnet').toLowerCase();
 export const CLUSTER = RAW === 'mainnet' || RAW === 'mainnet-beta' ? 'mainnet-beta' : 'devnet';
 export const IS_MAINNET = CLUSTER === 'mainnet-beta';
 
-/// Public endpoints are rate-limited hard and are not suitable for mainnet
-/// traffic — set VITE_RPC to a paid endpoint before launch.
-const DEFAULT_RPC = IS_MAINNET
-  ? 'https://api.mainnet-beta.solana.com'
-  : 'https://api.devnet.solana.com';
+/// Same-origin by default, proxied to the real provider by the server (and by
+/// Vite in dev). That indirection exists for one reason: anything in `VITE_RPC`
+/// is inlined into the client bundle at build time, so putting a paid endpoint's
+/// API key there publishes it to everyone who loads the site. The key lives in
+/// `HELIUS_RPC`, server-side, and never reaches the browser.
+///
+/// Setting VITE_RPC still works and skips the proxy — use it only for endpoints
+/// that carry no secret, or a key you have domain-locked with the provider.
+const RAW_RPC = import.meta.env?.VITE_RPC || '/rpc';
 
-export const RPC = import.meta.env?.VITE_RPC ?? DEFAULT_RPC;
+/// web3.js needs an absolute endpoint, so the same-origin default is resolved
+/// against the page rather than passed through as a path.
+export const RPC =
+  RAW_RPC.startsWith('http') || typeof window === 'undefined'
+    ? RAW_RPC
+    : new URL(RAW_RPC, window.location.origin).toString();
 
 /// Explorer links carry the cluster on devnet and omit it on mainnet, which is
 /// what the explorer expects — a `?cluster=mainnet-beta` query works but reads

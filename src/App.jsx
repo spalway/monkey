@@ -30,6 +30,66 @@ const short = (key) => {
   return `${s.slice(0, 4)}…${s.slice(-4)}`;
 };
 
+/// Connect, then disconnect, from one button.
+///
+/// The same control does both because there is only ever one sensible action:
+/// connected, the address is showing and the thing you might want is to drop
+/// it. Hovering a connected button says Disconnect so the click is never a
+/// surprise.
+///
+/// With no wallet chosen yet it opens the browser's own wallet picker via the
+/// adapter's `select`; every wallet worth supporting registers itself through
+/// the Wallet Standard, so the list is whatever the visitor actually has
+/// installed rather than a hardcoded set.
+function ConnectButton({ chain }) {
+  const { wallet, connected, connect, disconnect, select, wallets } = chain;
+  const [hover, setHover] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const ready = wallets?.filter((w) => w.readyState === 'Installed') ?? [];
+
+  const onClick = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (connected) {
+        await disconnect();
+      } else if (wallet) {
+        // Already selected, just not connected — reconnect the same one.
+        await connect();
+      } else if (ready.length) {
+        // `autoConnect` on the provider means selecting is enough; the adapter
+        // raises the wallet's own approval prompt from here.
+        select(ready[0].adapter.name);
+      } else {
+        window.open('https://solana.com/solana-wallets', '_blank', 'noreferrer');
+      }
+    } catch {
+      // The adapter surfaces its own errors, and a user rejecting the prompt is
+      // not one worth showing.
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const label = connected && wallet
+    ? (hover ? 'Disconnect' : short(wallet))
+    : 'Connect';
+
+  return (
+    <button
+      className={`connect ${connected ? 'on' : ''}`}
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      title={connected && wallet ? wallet.toBase58() : 'Connect a wallet'}
+    >
+      {label}
+    </button>
+  );
+}
+
 /// Hash routing — two pages do not justify a router dependency, and it keeps
 /// the site deployable as static files with no server rewrites.
 function useRoute() {
@@ -98,9 +158,7 @@ export default function App() {
             <span>@primatespl</span>
           </a>
 
-          <button className="connect" type="button">
-            {wallet ? short(wallet.publicKey) : 'Connect'}
-          </button>
+          <ConnectButton chain={chain} />
         </div>
       </header>
 

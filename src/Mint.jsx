@@ -36,7 +36,7 @@ export default function Mint({
   const minting = typeof busy === 'number';
   const ready = Boolean(wallet && config && picked && !soldOut && busy === null);
   const label = minting ? 'Minting…'
-    : !wallet ? 'Connecting wallet…'
+    : !wallet ? 'Connect a wallet to mint'
     : !picked ? 'Select a desk'
     : soldOut ? `${picked.name} Desk sold out`
     : `Mint 1 ${picked.name} Desk for ${price} SOL`;

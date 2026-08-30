@@ -16,24 +16,16 @@ leak a key.
 | Collection metadata | `public/meta/collection.json`, image `collection_pfp.png`. |
 | security.txt | `security.json` at the repo root, ready for the write command below. |
 | Build | `npm run build` → `dist/`. `npm start` serves `dist` plus the metadata routes on `$PORT`. |
+| Wallet | Solana wallet adapter, Wallet Standard discovery. One button connects and disconnects. Public page data (collection, engine, rotation) loads with no wallet connected. |
+| RPC | Browser calls same-origin `/rpc`; server forwards to `HELIUS_RPC`. Key never enters the bundle. |
+| Mainnet authority | `Gim1sRE6sf7hMXyKQERhaWkAgNUMNtmc129Wnp3iQ9E8` — secret in `mainnet-authority.json` (gitignored). Needs funding. |
 | Secrets | `.gitignore` excludes `public/dev-wallet.json`, `creator-wallet.json`, `.env.local`. Verified absent from the committed tree. |
 
 ---
 
 ## Blocking — mainnet will not work without these
 
-### 1. Wallet adapter
-
-The site has never had one. On devnet it signs with a throwaway key fetched from
-`/public`; that path is now hard-gated to devnet, which means **on mainnet the
-site currently cannot sign anything at all**. Minting and sweeping both need a
-real adapter (`@solana/wallet-adapter-react`, or `@solana/kit` + `@solana/react`)
-wired into `useChain`.
-
-This is the largest remaining piece of work and nothing else on this list
-matters until it is done.
-
-### 2. Program deploy to mainnet
+### 1. Program deploy to mainnet
 
 The program has only ever been deployed to devnet, and it has just changed (the
 per-asset metadata URI), so devnet is stale too.
@@ -48,27 +40,37 @@ Budget roughly **3 SOL** for the deploy buffer at the current program size.
 Decide first whether to keep the program id `CGcSojUL6xeXatcZ9RDzrqUqSucVnAR83fjv7KTrgJrm`
 (requires the same program keypair) or generate a fresh one for mainnet.
 
-### 3. Real xStock mints
+### 2. Point the client at the real xStock mints
 
-`public/deploy.json` holds ten **mock devnet mints**. Mainnet xStocks are real
-Backed Finance tokens and — importantly — **Token-2022, not classic SPL Token**.
-Two consequences:
+`public/deploy.mainnet.json` already holds all ten, verified against a public
+token API — **no xStocks API key is needed for any of this.** Their API is for
+market data; mint addresses are on-chain public record.
 
-- Every mint address in the rotation has to be replaced with the real one.
-- `settleIx` and `sweepIx` currently hardcode `TOKEN_PROGRAM_ID`. They must pass
-  the Token-2022 program id for these mints, or every transfer will fail account
-  validation. The program already links `anchor-spl` with the `token_2022`
-  feature; the client is what needs updating.
+Copy it over `public/deploy.json` when switching. Two things in it matter:
 
-Confirm the decimals per mint rather than assuming 6 — `STOCK_DECIMALS` in
-`useChain.js` and the `decimals` argument in `fetchHoldingsGrid` both assume it.
+- **decimals = 8**, not 6. The devnet mocks are 6. Any code that assumes one
+  silently mis-scales the other by 100x. This now comes from `deploy.json`
+  rather than a constant, so it follows the file.
+- **tokenProgram = Token-2022** (`TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`).
+  `settleIx`, `sweepIx`, `ataFor` and `createAtaIdempotentIx` still default to
+  classic SPL Token. **This is the remaining code change**: thread
+  `chainCfg.tokenProgram` through them, or every mainnet transfer fails account
+  validation. The program is already built for it (`anchor-spl` has the
+  `token_2022` feature); only the client assumes.
 
-### 4. Paid RPC
+### 3. Paid RPC
 
-`VITE_RPC` must point at Helius/QuickNode/Triton. The public mainnet endpoint
-will rate-limit the collection scan (`getProgramAccounts`) immediately.
+Done for devnet, and it is a one-line switch. The key lives in `HELIUS_RPC` in
+`.env.local` — **server-side only**. The browser calls `/rpc` on our own origin
+and the server forwards. Verified: the key does not appear in the built bundle.
 
-### 5. Unresolved before taking anyone's money
+For mainnet, change the `HELIUS_RPC` line in `.env.local` (and the Railway env)
+to the `mainnet.helius-rpc.com` variant already commented in that file.
+
+Do **not** put the key in `VITE_RPC` — anything VITE_-prefixed is inlined into
+the client bundle at build time and published to everyone who loads the site.
+
+### 4. Unresolved before taking anyone's money
 
 - The program is **unaudited** and holds a mint price path and a distribution path.
 - **Fee sweeping is not autonomous.** Creator fees are collected by an operator
@@ -84,8 +86,7 @@ will rate-limit the collection scan (`getProgramAccounts`) immediately.
 
 ## Order of operations
 
-1. Wallet adapter (above).
-2. `anchor build` and deploy to mainnet; note the program id.
+1. `anchor build` and deploy to mainnet; note the program id.
 3. Write security.txt:
    ```
    npx @solana-program/program-metadata@latest write security <PROGRAM_ID> ./security.json
@@ -98,7 +99,7 @@ will rate-limit the collection scan (`getProgramAccounts`) immediately.
    mints into `deploy.json` by hand.
 7. `npm run engine` to initialise the rotation and cadence.
 8. Push to GitHub, connect the repo to Railway.
-9. Railway env: `VITE_CLUSTER=mainnet`, `VITE_RPC=<paid endpoint>`,
+9. Railway env: `VITE_CLUSTER=mainnet`, `HELIUS_RPC=<mainnet helius url>`,
    `PUBLIC_URL=https://primates.app`. Build `npm run build`, start `npm start`.
 10. Point `primates.app` at the Railway service, then re-check that the token
     metadata URLs resolve publicly — wallets fetch them from outside your network.

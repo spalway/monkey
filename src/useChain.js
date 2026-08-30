@@ -1,12 +1,12 @@
 // All devnet state and the mint action, in one hook so the pages stay presentational.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import {
   Connection,
   Keypair,
   PublicKey,
   Transaction,
-  sendAndConfirmTransaction,
 } from '@solana/web3.js';
 import { ALLOW_DEV_WALLET, RPC } from './cluster.js';
 import {
@@ -34,11 +34,15 @@ import {
 
 export const connection = new Connection(RPC, 'confirmed');
 
-/// Decimals on the rotation stocks. Mock mints use 6; xStocks do too.
-const STOCK_DECIMALS = 6;
+/// Fallback only. Real values come from deploy.json, because they differ by
+/// cluster: the devnet mocks are 6-decimal classic SPL Token, and mainnet
+/// xStocks are 8-decimal Token-2022. Assuming either one breaks the other.
+const FALLBACK_DECIMALS = 6;
 
 export function useChain() {
-  const [wallet, setWallet] = useState(null);
+  // The connected wallet, from the adapter. `wallet` is a PublicKey or null —
+  // this hook no longer holds a signing key of any kind.
+  const { publicKey: wallet, sendTransaction, connected, disconnect, connect, select, wallets } = useWallet();
   const [balance, setBalance] = useState(null);
   const [config, setConfig] = useState(null);
   const [engine, setEngine] = useState(null);
@@ -52,6 +56,11 @@ export function useChain() {
   const [vaultHoldings, setVaultHoldings] = useState({});
   const pending = useRef(new Set());
   const [tickers, setTickers] = useState({});
+  // Per-cluster token facts, from deploy.json. See FALLBACK_DECIMALS.
+  const [chainCfg, setChainCfg] = useState({
+    decimals: FALLBACK_DECIMALS,
+    tokenProgram: null,
+  });
   const [busy, setBusy] = useState(null);
   const [log, setLog] = useState([]);
   const [error, setError] = useState(null);
@@ -66,25 +75,6 @@ export function useChain() {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    // Hard stop outside devnet. /dev-wallet.json is a private key served to
-    // every visitor: a fine convenience on a throwaway cluster and a catastrophe
-    // anywhere else. The guard is on the cluster rather than on remembering to
-    // delete the file before deploying, because that is the kind of thing that
-    // gets remembered every time until the once it does not.
-    if (!ALLOW_DEV_WALLET) {
-      setError('No wallet connected. This build needs a wallet adapter — see DEPLOY.md.');
-      return;
-    }
-    fetch('/dev-wallet.json')
-      .then((r) => {
-        if (!r.ok) throw new Error('missing');
-        return r.json();
-      })
-      .then((secret) => setWallet(Keypair.fromSecretKey(Uint8Array.from(secret))))
-      .catch(() => setError('No controller wallet. Run "npm run wallet", then reload.'));
-  }, []);
-
   // mint address -> ticker, written by `npm run stocks`. Cosmetic only.
   useEffect(() => {
     fetch('/deploy.json')
@@ -92,6 +82,10 @@ export function useChain() {
       .then((deploy) => {
         if (!deploy?.stocks) return;
         setTickers(Object.fromEntries(Object.entries(deploy.stocks).map(([t, m]) => [m, t])));
+        setChainCfg({
+          decimals: deploy.stockDecimals ?? FALLBACK_DECIMALS,
+          tokenProgram: deploy.tokenProgram ?? null,
+        });
       })
       .catch(() => {});
   }, []);
@@ -118,9 +112,13 @@ export function useChain() {
   );
 
   const refresh = useCallback(async () => {
-    if (!wallet) return null;
     try {
-      setBalance(await connection.getBalance(wallet.publicKey));
+      // Everything down to `held` is public: the collection, the engine and the
+      // rotation belong to the page, not to a visitor. Gating them on a
+      // connected wallet meant the landing page was blank until someone
+      // approved a wallet popup, which is backwards — the pitch has to render
+      // before anyone has a reason to connect.
+      setBalance(wallet ? await connection.getBalance(wallet) : null);
 
       const configAccount = await connection.getAccountInfo(configPda());
       if (!configAccount) {
@@ -152,7 +150,14 @@ export function useChain() {
 
       setMinted(await fetchCollectionDesks(connection, cfg.collection));
 
-      const held = await fetchDesks(connection, wallet.publicKey, cfg.collection);
+      // Past here is this visitor's own holdings, so it needs a wallet.
+      if (!wallet) {
+        setDesks([]);
+        setError(null);
+        return 0;
+      }
+
+      const held = await fetchDesks(connection, wallet, cfg.collection);
 
       // Two batched calls for the whole list, not two per desk — public devnet
       // RPC starts returning 429 at around a dozen requests per page load.
@@ -167,7 +172,7 @@ export function useChain() {
           // Same rule: owed comes back as raw BigInt units, so convert here.
           const owed =
             eng && registered
-              ? owedFor(eng, registered).map((raw) => Number(raw) / 10 ** STOCK_DECIMALS)
+              ? owedFor(eng, registered).map((raw) => Number(raw) / 10 ** chainCfg.decimals)
               : null;
           return {
             ...desk,
@@ -183,11 +188,52 @@ export function useChain() {
       setError(e.message);
       return null;
     }
-  }, [wallet]);
+  }, [wallet, chainCfg.decimals]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  /// Restart the countdown once a round is actually due.
+  ///
+  /// `lastRound` only moves when someone cranks, so the clock reaching zero is
+  /// not the same event as the round happening — it just means one is now
+  /// allowed. Polling from that moment (rather than on a permanent timer) keeps
+  /// the countdown honest without spending a request a second for the rest of
+  /// the interval: it sits idle until due, then checks every ten seconds until
+  /// the chain says a round landed, and stops again.
+  useEffect(() => {
+    if (!engine) return undefined;
+    const dueAt = engine.lastRound + engine.minInterval;
+    if (now < dueAt) return undefined;
+
+    const id = setInterval(async () => {
+      try {
+        const account = await connection.getAccountInfo(enginePda());
+        if (!account) return;
+        const next = decodeEngine(account.data);
+        if (Number(next.lastRound) > engine.lastRound) {
+          setEngine({
+            rotation: next.rotation,
+            cursor: next.cursor,
+            totalWeight: Number(next.totalWeight),
+            lastRound: Number(next.lastRound),
+            minInterval: Number(next.minInterval),
+          });
+          // The round moved balances, so what is on screen is now stale.
+          refresh();
+        }
+      } catch {
+        // A missed poll costs nothing; the next one is ten seconds away.
+      }
+    }, 10_000);
+
+    return () => clearInterval(id);
+    // `now` is deliberately absent: it ticks every second and would tear the
+    // interval down and rebuild it each time. The effect only needs to re-run
+    // when the round it is waiting for changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [engine?.lastRound, engine?.minInterval, now >= (engine?.lastRound ?? 0) + (engine?.minInterval ?? 0), refresh]);
 
   const mint = useCallback(
     async (tier) => {
@@ -200,32 +246,31 @@ export function useChain() {
         // belongs to the minter, the account belongs to the Core program.
         const asset = Keypair.generate();
 
-        const sig = await sendAndConfirmTransaction(
-          connection,
-          new Transaction().add(
-            mintDeskIx({
-              minter: wallet.publicKey,
-              asset: asset.publicKey,
-              collection: config.collection,
-              treasury: config.treasury,
-              tier: tier.id,
-            }),
-          ),
-          [wallet, asset],
-          { commitment: 'confirmed' },
+        const mintTx = new Transaction().add(
+          mintDeskIx({
+            minter: wallet,
+            asset: asset.publicKey,
+            collection: config.collection,
+            treasury: config.treasury,
+            tier: tier.id,
+          }),
         );
+        // The asset keypair rides along as an extra signer: Core requires the
+        // new address to sign its own creation, and the wallet cannot do that
+        // for a key it has never seen.
+        const sig = await sendTransaction(mintTx, connection, { signers: [asset] });
+        await connection.confirmTransaction(sig, 'confirmed');
         say(`minted ${tier.name} Desk · ${sig}`);
 
         // Registering is what puts the desk into the allocation engine.
         if (engine) {
-          await sendAndConfirmTransaction(
-            connection,
+          const regSig = await sendTransaction(
             new Transaction().add(
-              registerDeskIx({ payer: wallet.publicKey, asset: asset.publicKey }),
+              registerDeskIx({ payer: wallet, asset: asset.publicKey }),
             ),
-            [wallet],
-            { commitment: 'confirmed' },
+            connection,
           );
+          await connection.confirmTransaction(regSig, 'confirmed');
           say(`registered · weight ${tier.weight}`);
         }
 
@@ -276,7 +321,7 @@ export function useChain() {
       setBusy('sweep');
       setError(null);
       try {
-        const owner = wallet.publicKey;
+        const owner = wallet;
         const mints = picks.map((p) => new PublicKey(p.mint));
         const atas = mints.map((m) => ataFor(m, owner));
 
@@ -305,13 +350,12 @@ export function useChain() {
                 owner,
                 mint: mints[j],
                 amount: picks[j].raw,
-                decimals: STOCK_DECIMALS,
+                decimals: chainCfg.decimals,
               }),
             );
           }
-          const sig = await sendAndConfirmTransaction(connection, tx, [wallet], {
-            commitment: 'confirmed',
-          });
+          const sig = await sendTransaction(tx, connection);
+          await connection.confirmTransaction(sig, 'confirmed');
           say(`swept ${Math.min(i + PER_TX, picks.length)}/${picks.length} · ${sig}`);
         }
 
@@ -337,6 +381,9 @@ export function useChain() {
     wallet, balance, config, engine, desks, minted, tickers, busy, log, error, now, mint,
     vaultHoldings, loadHoldings, sweep,
     justMinted, clearMinted: () => setJustMinted(null),
+    // Wallet controls, passed through so the nav button does not have to reach
+    // for the adapter separately and end up with a different idea of the state.
+    connected, connect, disconnect, select, wallets,
   };
 }
 
