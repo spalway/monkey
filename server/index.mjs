@@ -112,11 +112,21 @@ async function serveStatic(res, urlPath) {
     const info = await stat(file);
     if (info.isDirectory()) throw new Error('dir');
     const body = await readFile(file);
-    return send(res, 200, MIME[extname(file)] ?? 'application/octet-stream', body, 'public, max-age=3600');
+
+    // Build output under /assets is content-hashed, so a given URL never
+    // changes and can be cached forever. Everything else — index.html above
+    // all — must revalidate: index.html is what names the current bundle, and
+    // caching it means a deploy does not reach anyone still holding the old
+    // copy until the cache expires. That is a deploy that silently does
+    // nothing, which is worse than a slow one.
+    const immutable = rel.startsWith('assets/') || rel.startsWith('assets\\');
+    const cache = immutable ? 'public, max-age=31536000, immutable' : 'no-cache';
+
+    return send(res, 200, MIME[extname(file)] ?? 'application/octet-stream', body, cache);
   } catch {
     // Hash routing means every unknown path is a page, not a 404.
     try {
-      return send(res, 200, MIME['.html'], await readFile(join(DIST, 'index.html')));
+      return send(res, 200, MIME['.html'], await readFile(join(DIST, 'index.html')), 'no-cache');
     } catch {
       return send(res, 404, 'text/plain', 'not found');
     }
