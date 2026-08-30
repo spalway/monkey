@@ -2949,3 +2949,13 @@ h3 {
     order: 3;
   }
 }
+
+/* Credited by a round but not yet in the vault. Shown because the total above
+   it includes this amount, and a number that has not arrived yet should say
+   so — sweeping settles it in the same transaction. */
+.sweep-pending {
+  color: color-mix(in srgb, var(--accent) 70%, transparent);
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

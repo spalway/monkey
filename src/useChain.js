@@ -14,6 +14,7 @@ import {
   createAtaIdempotentIx,
   TOKEN_PROGRAM_ID,
   decodeCoreAsset,
+  settleIx,
   sweepIx,
   vaultPda,
   configPda,
@@ -286,16 +287,45 @@ export function useChain() {
       setDesks(
         held.map((desk) => {
           const registered = states.get(desk.address.toBase58()) ?? null;
-          // Same rule: owed comes back as raw BigInt units, so convert here.
-          const owed =
-            eng && registered
-              ? owedFor(eng, registered).map((raw) => Number(raw) / 10 ** chainCfg.decimals)
-              : null;
+          const owedRaw = eng && registered ? owedFor(eng, registered) : null;
+          // Same rule as everywhere: raw BigInts stay out of React state.
+          const owed = owedRaw
+            ? owedRaw.map((raw) => Number(raw) / 10 ** chainCfg.decimals)
+            : null;
+
+          // What a holder can actually take is the vault balance plus whatever
+          // rounds have credited but nobody has settled yet. Listing only the
+          // vault meant a desk with a pending allocation opened the sweep
+          // dialog and showed nothing — which reads as broken rather than as
+          // "one more instruction is needed first". Sweeping settles.
+          const inVault = new Map(
+            (grid.get(desk.vault.toBase58()) ?? []).map((h) => [h.mint, h]),
+          );
+          const holdings = eng
+            ? eng.rotation
+                .map((mintKey, slot) => {
+                  const mint = mintKey.toBase58();
+                  const vaultRaw = BigInt(inVault.get(mint)?.raw ?? 0);
+                  const pendingRaw = owedRaw?.[slot] ?? 0n;
+                  const total = vaultRaw + pendingRaw;
+                  if (total === 0n) return null;
+                  return {
+                    mint,
+                    slot,
+                    raw: total.toString(),
+                    amount: Number(total) / 10 ** chainCfg.decimals,
+                    pendingRaw: pendingRaw.toString(),
+                    pending: Number(pendingRaw) / 10 ** chainCfg.decimals,
+                  };
+                })
+                .filter(Boolean)
+            : (grid.get(desk.vault.toBase58()) ?? []);
+
           return {
             ...desk,
             weight: registered?.weight ?? null,
             owed,
-            holdings: grid.get(desk.vault.toBase58()) ?? [],
+            holdings,
           };
         }),
       );
@@ -472,7 +502,11 @@ export function useChain() {
         // 1232-byte limit on the key list alone. Measured at the worst case —
         // every destination account missing, so a create rides along with each
         // sweep — five comes to 1033 bytes and six would leave no margin.
-        const PER_TX = 5;
+        // Three, not five: a stock with a pending allocation needs a settle
+        // instruction alongside its sweep, and settle brings the engine, the
+        // desk PDA and the holding account into the key table. Five of those
+        // pairs overruns 1232 bytes.
+        const PER_TX = picks.some((p) => BigInt(p.pendingRaw ?? 0) > 0n) ? 3 : 5;
         for (let i = 0; i < picks.length; i += PER_TX) {
           const tx = new Transaction();
           for (let j = i; j < Math.min(i + PER_TX, picks.length); j++) {
@@ -481,6 +515,20 @@ export function useChain() {
                 payer: owner, owner, mint: mints[j], tokenProgram: chainCfg.tokenProgram,
               }));
             }
+
+            // Settle first where a round has credited this stock but nobody has
+            // delivered it. Without this the vault does not hold what the
+            // holder was just shown, and the transfer below fails for
+            // insufficient funds. Same transaction, so it cannot half-happen.
+            if (BigInt(picks[j].pendingRaw ?? 0) > 0n) {
+              tx.add(settleIx({
+                cranker: owner,
+                asset: desk.address,
+                stockMint: mints[j],
+                tokenProgram: chainCfg.tokenProgram,
+              }));
+            }
+
             tx.add(
               sweepIx({
                 asset: desk.address,
@@ -493,6 +541,11 @@ export function useChain() {
               }),
             );
           }
+
+          tx.feePayer = owner;
+          tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+          await preflight(tx);
+
           const sig = await sendTransaction(tx, signingConnection);
           await confirmed(sig);
           say(`swept ${Math.min(i + PER_TX, picks.length)}/${picks.length} · ${sig}`);

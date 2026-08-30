@@ -56,8 +56,10 @@ export default function SweepModal({ desk, tickers, onClose, onSweep, busy }) {
   // than editing them, so unchecking it puts the holder's own choices back.
   const amountFor = (h) => (all ? h.raw : cut(h.raw, pct[h.mint] ?? 0));
 
+  // pendingRaw rides along so the hook knows which stocks need settling into
+  // the vault before they can be transferred out of it.
   const picks = held
-    .map((h) => ({ mint: h.mint, raw: amountFor(h) }))
+    .map((h) => ({ mint: h.mint, raw: amountFor(h), pendingRaw: h.pendingRaw ?? '0' }))
     .filter((p) => BigInt(p.raw) > 0n);
 
   const total = picks.reduce((sum, p) => sum + BigInt(p.raw), 0n).toString();
@@ -90,6 +92,11 @@ export default function SweepModal({ desk, tickers, onClose, onSweep, busy }) {
                       <StockLogo ticker={ticker} size={20} />
                       <b>{ticker ?? `${h.mint.slice(0, 4)}…`}</b>
                       <span className="sweep-qty">{units(h.raw)}</span>
+                      {BigInt(h.pendingRaw ?? 0) > 0n && (
+                        <span className="sweep-pending" title="Credited by a round, not yet delivered. Sweeping delivers it.">
+                          {units(h.pendingRaw)} pending
+                        </span>
+                      )}
                     </span>
 
                     <span className="sweep-steps">
