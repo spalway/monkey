@@ -35,6 +35,37 @@ import {
 
 export const connection = new Connection(RPC, 'confirmed');
 
+/// Wait for a signature by polling, not by subscribing.
+///
+/// `connection.confirmTransaction` opens a websocket, and web3.js derives that
+/// endpoint from the HTTP one — so behind the same-origin /rpc proxy it dials
+/// wss://<site>/rpc, which the server does not implement. The subscription
+/// never fires and the await never returns: the wallet signs, the transaction
+/// lands, and the page sits on "Minting…" forever with no error to show.
+///
+/// getSignatureStatuses is plain HTTP and goes through the proxy like
+/// everything else.
+async function confirmed(signature, timeoutMs = 90_000) {
+  const started = Date.now();
+  for (;;) {
+    const { value } = await connection.getSignatureStatuses([signature]);
+    const status = value[0];
+
+    if (status?.err) {
+      throw new Error(`transaction failed on-chain: ${JSON.stringify(status.err)}`);
+    }
+    if (status?.confirmationStatus === 'confirmed' || status?.confirmationStatus === 'finalized') {
+      return signature;
+    }
+    if (Date.now() - started > timeoutMs) {
+      // The signature is the useful half here: the transaction may well have
+      // landed, and this is what lets anyone go and look.
+      throw new Error(`not confirmed after ${Math.round(timeoutMs / 1000)}s · ${signature}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+  }
+}
+
 /// Fallback only. Real values come from deploy.json, because they differ by
 /// cluster: the devnet mocks are 6-decimal classic SPL Token, and mainnet
 /// xStocks are 8-decimal Token-2022. Assuming either one breaks the other.
@@ -275,7 +306,7 @@ export function useChain() {
         // new address to sign its own creation, and the wallet cannot do that
         // for a key it has never seen.
         const sig = await sendTransaction(mintTx, connection, { signers: [asset] });
-        await connection.confirmTransaction(sig, 'confirmed');
+        await confirmed(sig);
         say(`minted ${tier.name} Desk · ${sig}`);
 
         // Registering is what puts the desk into the allocation engine.
@@ -286,7 +317,7 @@ export function useChain() {
             ),
             connection,
           );
-          await connection.confirmTransaction(regSig, 'confirmed');
+          await confirmed(regSig);
           say(`registered · weight ${tier.weight}`);
         }
 
@@ -374,7 +405,7 @@ export function useChain() {
             );
           }
           const sig = await sendTransaction(tx, connection);
-          await connection.confirmTransaction(sig, 'confirmed');
+          await confirmed(sig);
           say(`swept ${Math.min(i + PER_TX, picks.length)}/${picks.length} · ${sig}`);
         }
 
