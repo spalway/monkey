@@ -293,6 +293,13 @@ export function useChain() {
         // belongs to the minter, the account belongs to the Core program.
         const asset = Keypair.generate();
 
+        // Mint and register in one transaction.
+        //
+        // As two, a holder who approved the first prompt and dismissed the
+        // second was left owning a desk that no round would ever credit —
+        // minted but unregistered, indistinguishable from working until the
+        // allocations never arrived. One transaction is atomic, and it is one
+        // wallet prompt instead of two.
         const mintTx = new Transaction().add(
           mintDeskIx({
             minter: wallet,
@@ -302,24 +309,16 @@ export function useChain() {
             tier: tier.id,
           }),
         );
+        if (engine) {
+          mintTx.add(registerDeskIx({ payer: wallet, asset: asset.publicKey }));
+        }
+
         // The asset keypair rides along as an extra signer: Core requires the
         // new address to sign its own creation, and the wallet cannot do that
         // for a key it has never seen.
         const sig = await sendTransaction(mintTx, connection, { signers: [asset] });
         await confirmed(sig);
-        say(`minted ${tier.name} Desk · ${sig}`);
-
-        // Registering is what puts the desk into the allocation engine.
-        if (engine) {
-          const regSig = await sendTransaction(
-            new Transaction().add(
-              registerDeskIx({ payer: wallet, asset: asset.publicKey }),
-            ),
-            connection,
-          );
-          await confirmed(regSig);
-          say(`registered · weight ${tier.weight}`);
-        }
+        say(`minted ${tier.name} Desk${engine ? ` · weight ${tier.weight}` : ''} · ${sig}`);
 
         // Everything the success dialog needs, read straight off the asset
         // rather than waiting for the collection scan below to catch up —
