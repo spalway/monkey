@@ -7,6 +7,7 @@
 import { ArrowLeft, TriangleAlert } from 'lucide-react';
 import { ARTICLES, articleBySlug } from './articles.js';
 import { IS_MAINNET } from './cluster.js';
+import { Link } from './router.jsx';
 
 /// Every article's blocks are plain data; this is the only place that knows how
 /// each kind renders. See articles.js for the shapes.
@@ -61,10 +62,10 @@ function ArticleView({ article }) {
       <div className="shell article">
         <Thumb article={article} />
 
-        <a className="back" href="#/changelog">
+        <Link to="/changelog" className="back">
           <ArrowLeft size={13} strokeWidth={2.2} aria-hidden />
           Back to changelogs
-        </a>
+        </Link>
 
         <div className="article-head">
           <span className="article-n" style={{ color: accent }}>
@@ -119,10 +120,10 @@ function ListView() {
             {ARTICLES.map((article) => {
               const accent = article.accent ?? 'var(--accent)';
               return (
-                <a
+                <Link
                   className="article-card"
                   key={article.slug}
-                  href={`#/changelog/${article.slug}`}
+                  to={`/changelog/${article.slug}`}
                   style={{ '--accent-a': accent }}
                 >
                   <Thumb article={article} className="in-card" />
@@ -136,7 +137,7 @@ function ListView() {
                     <h2 style={{ color: accent }}>{article.title}</h2>
                     <p>{article.summary}</p>
                   </div>
-                </a>
+                </Link>
               );
             })}
           </div>

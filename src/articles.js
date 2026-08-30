@@ -76,20 +76,6 @@ export const ARTICLES = [
         p: 'Every desk looks like itself. The colourway is rolled from the asset\'s own address, so it is recomputable by anyone holding that address and stored by nobody — the program records no seed and the site keeps no table. Each tier has its own hand-timed walk cycle, and the tab icon is the Kong walk rasterised frame by frame.',
       },
 
-      { h: 'Where this is' },
-      {
-        devnetOnly: true,
-        list: [
-          'Running on devnet. The stocks in the rotation are mock mints with no value and the SOL is test SOL.',
-          'Fee sweeping still runs through an operator key. pump.fun\'s fee-sharing config can make the split on-chain and permissionless, which removes that key from the recurring loop — designed, not shipped.',
-          'Buying happens off-chain. The engine credits what arrives in its holding account; closing that gap means a program-owned pot and a swap CPI.',
-          'Token metadata still points at placeholder art rather than the generated sprites the site renders.',
-          'Securities and jurisdiction review has not happened. xStocks exclude U.S. persons, and that question needs answering before mainnet rather than after.',
-        ],
-      },
-      {
-        note: 'Nothing here is an offer, and none of it is investment advice.',
-      },
     ],
   },
 ];

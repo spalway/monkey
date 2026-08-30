@@ -1,6 +1,7 @@
 // Shell and router. Signing is the visitor's own wallet, via the adapter.
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Link, useRoute } from './router.jsx';
 import { explorer } from './cluster.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { PROGRAM_ID, TIERS } from './primates.js';
@@ -89,21 +90,6 @@ function ConnectButton({ chain }) {
   );
 }
 
-/// Hash routing — two pages do not justify a router dependency, and it keeps
-/// the site deployable as static files with no server rewrites.
-function useRoute() {
-  const [route, setRoute] = useState(() => window.location.hash.slice(2) || '');
-  useEffect(() => {
-    const onHash = () => {
-      setRoute(window.location.hash.slice(2) || '');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
-  }, []);
-  return route;
-}
-
 export default function App() {
   const route = useRoute();
   // "changelog/introducing-primates-app" -> section + param. One split is the
@@ -129,20 +115,20 @@ export default function App() {
         <div className="nav-shell">
           {/* The wordmark is the way home. A logo already means that, so it
               needs neither a Home nav item nor an arrow to say it again. */}
-          <a className="wordmark" href="#/" aria-label="Primates.fun — home">
+          <Link to="/" className="wordmark" aria-label="Primates.fun — home">
             Primates<b>.fun</b>
-          </a>
+          </Link>
 
           <nav className="nav">
-            <a href="#/mint" className={section === 'mint' ? 'active' : ''}>
+            <Link to="/mint" className={section === 'mint' ? 'active' : ''}>
               Mint
-            </a>
-            <a href="#/docs" className={section === 'docs' ? 'active' : ''}>
+            </Link>
+            <Link to="/docs" className={section === 'docs' ? 'active' : ''}>
               Docs
-            </a>
-            <a href="#/changelog" className={section === 'changelog' ? 'active' : ''}>
+            </Link>
+            <Link to="/changelog" className={section === 'changelog' ? 'active' : ''}>
               Changelog
-            </a>
+            </Link>
           </nav>
 
           <a

@@ -2,6 +2,7 @@ import { TriangleAlert } from 'lucide-react';
 import { explorer } from './cluster.js';
 import Countdown from './Countdown.jsx';
 import MintedList from './MintedList.jsx';
+import { Link } from './router.jsx';
 import Contracts from './Contracts.jsx';
 import TokenAddress from './TokenAddress.jsx';
 import { LogoLoop, StockLogo, brandFor } from './Logos.jsx';
@@ -143,9 +144,9 @@ export default function Landing({
           ))}
         </div>
 
-        <a className="cta" href="#/mint">
+        <Link to="/mint" className="cta">
           Ape in →
-        </a>
+        </Link>
 
 
       </section>
