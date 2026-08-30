@@ -323,6 +323,9 @@ export function runRoundIx({ cranker, stockMint, tokenProgram = TOKEN_PROGRAM_ID
       { pubkey: engine, isSigner: false, isWritable: true },
       { pubkey: new PublicKey(stockMint), isSigner: false, isWritable: false },
       { pubkey: ataFor(stockMint, engine, tokenProgram), isSigner: false, isWritable: false },
+      // Last, matching the RunRound accounts struct. The program needs it to
+      // derive the associated-token address the same way this client just did.
+      { pubkey: new PublicKey(tokenProgram), isSigner: false, isWritable: false },
     ],
     data: Buffer.from(ENGINE_DISCRIMINATORS.runRound),
   });
