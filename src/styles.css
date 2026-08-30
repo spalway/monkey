@@ -2857,19 +2857,25 @@ h3 {
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  /* No gap. A bare text node is its own anonymous flex item, so "Primates" and
+     <b>.fun</b> are two items and a gap here splits the wordmark in half. The
+     arrow carries its own margin instead. */
+  gap: 0;
   color: var(--text);
+  text-decoration: none;
   transition: color 0.16s ease;
 }
 
 .wordmark:hover {
   color: var(--text);
+  text-decoration: none;
 }
 
 /* Only rendered off the home page. Slides in from the left on hover so the
    affordance is felt before it is read. */
 .wordmark-back {
   flex: none;
+  margin-right: 7px;
   color: var(--accent);
   transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
 }

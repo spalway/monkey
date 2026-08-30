@@ -37,9 +37,25 @@ const MIN_SOL = Number(process.env.BUYBACK_MIN_SOL ?? 0.05);
 const SLIPPAGE_BPS = Number(process.env.BUYBACK_SLIPPAGE_BPS ?? 300);
 
 const deploy = JSON.parse(fs.readFileSync('public/deploy.mainnet.json', 'utf8'));
-const treasury = Keypair.fromSecretKey(
-  Uint8Array.from(JSON.parse(fs.readFileSync('treasury-wallet.json', 'utf8'))),
-);
+
+/// The treasury key, from the environment first and the local file second.
+///
+/// The file is gitignored, so it does not exist on a deployed box — a hosted
+/// cron has to get the key from `TREASURY_SECRET` (the same JSON array of
+/// bytes, on one line). Local runs keep using the file so nobody has to paste
+/// a key into a shell to test a dry run.
+function loadTreasury() {
+  const fromEnv = process.env.TREASURY_SECRET;
+  if (fromEnv) return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fromEnv)));
+  if (fs.existsSync('treasury-wallet.json')) {
+    return Keypair.fromSecretKey(
+      Uint8Array.from(JSON.parse(fs.readFileSync('treasury-wallet.json', 'utf8'))),
+    );
+  }
+  throw new Error('no treasury key: set TREASURY_SECRET or provide treasury-wallet.json');
+}
+
+const treasury = loadTreasury();
 
 const connection = new Connection(RPC, 'confirmed');
 const log = (...a) => process.stdout.write(`${a.join(' ')}\n`);
