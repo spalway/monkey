@@ -29,7 +29,12 @@ loadEnvLocal();
 const args = process.argv.slice(2);
 const SEND = args.includes('--send');
 const fromIdx = args.indexOf('--from');
-const destination = args.find((a, i) => !a.startsWith('--') && i !== fromIdx + 1);
+// The `fromIdx >= 0` guard matters: with no --from, indexOf returns -1 and
+// -1 + 1 is 0 — which is exactly where the address sits, so the destination
+// was being skipped and every plain run printed the usage line.
+const destination = args.find(
+  (a, i) => !a.startsWith('--') && !(fromIdx >= 0 && i === fromIdx + 1),
+);
 
 const RPC = process.env.HELIUS_RPC ?? process.env.RPC ?? 'https://api.mainnet-beta.solana.com';
 const KEEP_SOL = Number(process.env.TREASURY_KEEP_SOL ?? 0.002);
@@ -52,7 +57,9 @@ try {
 /// Which wallet to drain. Named rather than a file path so a typo cannot
 /// silently reach for the upgrade authority.
 const FROM = { treasury: 'treasury-wallet.json', pot: 'pot-wallet.json' };
-const which = (args[args.indexOf('--from') + 1] ?? 'treasury').toLowerCase();
+// Same -1 guard as above: without it this read the destination address as the
+// wallet name and rejected every plain run.
+const which = (fromIdx >= 0 ? (args[fromIdx + 1] ?? '') : 'treasury').toLowerCase();
 const keyFile = FROM[which];
 if (!keyFile) {
   log(`--from must be one of: ${Object.keys(FROM).join(', ')}`);
