@@ -6,6 +6,24 @@ leak a key.
 
 ---
 
+## Mainnet — live
+
+| Thing | Address |
+|---|---|
+| Program | `CGcSojUL6xeXatcZ9RDzrqUqSucVnAR83fjv7KTrgJrm` |
+| ProgramData | `8PEjEAkwBvHnBRZatZnYVxK9h4GCgBwTCJJQ2SF2gpAF` |
+| Upgrade authority | `Gim1sRE6sf7hMXyKQERhaWkAgNUMNtmc129Wnp3iQ9E8` |
+| security.txt | `6PBkz13r3FeLFpypkQphgPoiPTzUKo4PsreovQVkV5Fo` |
+
+Deployed at slot 442862061. 2.6676 SOL is locked as program rent; recoverable
+only by closing the program. Authority balance after deploy: ~0.31 SOL.
+
+**Not yet initialised** — no config, no collection, no engine. Nothing can be
+minted until those exist, which is deliberate: they need decisions (treasury,
+final prices, final supply) and the metadata host live first.
+
+---
+
 ## What is already wired
 
 | Piece | State |
