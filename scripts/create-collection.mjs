@@ -8,7 +8,7 @@ import { createSignerFromKeypair, publicKey, signerIdentity } from '@metaplex-fo
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { createCollection, ruleSet } from '@metaplex-foundation/mpl-core';
 import { configPda } from '../src/primates.js';
-import { config, deployment, saveDeployment, treasury, wallet } from './shared.mjs';
+import { config, deployment, rpcUrl, saveDeployment, treasury, wallet } from './shared.mjs';
 
 const payer = wallet();
 const existing = deployment().collection;
@@ -19,7 +19,7 @@ if (existing) {
   process.exit(0);
 }
 
-const umi = createUmi(config.rpc);
+const umi = createUmi(rpcUrl());
 const signer = createSignerFromKeypair(umi, umi.eddsa.createKeypairFromSecretKey(payer.secretKey));
 umi.use(signerIdentity(signer));
 

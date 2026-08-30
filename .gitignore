@@ -23,3 +23,6 @@ mainnet-authority.json
 
 # Treasury: receives mint payments. Real money. Never commit.
 treasury-wallet.json
+
+# Fee pot: creator fees in, xStock buys out. Real money. Never commit.
+pot-wallet.json

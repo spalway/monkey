@@ -15,7 +15,7 @@
   },
   "treasury": "F7ivZZGjZKC8vhzL2KgxtScPqwrKkXTYHFUQ2xq6iL1i",
   "protocolBps": 2000,
-  "roundIntervalSeconds": 600,
+  "roundIntervalSeconds": 900,
   "roundPotSol": 1,
   "dustFloorUnits": 0.000001,
   "pump": {
@@ -24,8 +24,9 @@
     "mint": null,
     "creator": null,
     "minSweepSol": 0.05,
-    "protocolWallet": null,
-    "potWallet": null
+    "protocolWallet": "F7ivZZGjZKC8vhzL2KgxtScPqwrKkXTYHFUQ2xq6iL1i",
+    "potWallet": "8LFLVLQpRbW4MXSxb8RKR7A9o795oJGx2vn3jme921fm"
   },
-  "_uriBaseNote": "Must be a public origin. Wallets and explorers fetch token metadata from their own servers, so localhost resolves to nothing for everyone but you — which is why nothing shows an image today."
+  "_uriBaseNote": "Must be a public origin. Wallets and explorers fetch token metadata from their own servers, so localhost resolves to nothing for everyone but you — which is why nothing shows an image today.",
+  "rpcMainnet": "https://api.mainnet-beta.solana.com"
 }

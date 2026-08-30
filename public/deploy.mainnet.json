@@ -1,6 +1,6 @@
 {
   "_note": "Mainnet. Copy over public/deploy.json when VITE_CLUSTER=mainnet. Collection and treasury are filled in by `npm run collection` / `npm run init`.",
-  "collection": "",
+  "collection": "6Nak9ksPEMTguEiSdDb1f6KivCGvTxBYrh4R1tXFnemy",
   "treasury": "F7ivZZGjZKC8vhzL2KgxtScPqwrKkXTYHFUQ2xq6iL1i",
   "stocks": {
     "AAPLx": "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp",
@@ -17,5 +17,6 @@
   "stockDecimals": 8,
   "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
   "tokenMint": "",
-  "_tokenMintNote": "The project token. Empty until launch — the CA button on the landing page hides itself while this is blank, and scripts/buyback.mjs holds SOL instead of buying."
+  "_tokenMintNote": "The project token. Empty until launch — the CA button on the landing page hides itself while this is blank, and scripts/buyback.mjs holds SOL instead of buying.",
+  "pot": "8LFLVLQpRbW4MXSxb8RKR7A9o795oJGx2vn3jme921fm"
 }
