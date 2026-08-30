@@ -2862,26 +2862,17 @@ h3 {
      arrow carries its own margin instead. */
   gap: 0;
   color: var(--text);
+  /* The global a:hover draws a border-bottom, which on a logotype reads as an
+     underline. Cleared in both states rather than only on hover. */
   text-decoration: none;
+  border-bottom: 0;
   transition: color 0.16s ease;
 }
 
 .wordmark:hover {
   color: var(--text);
   text-decoration: none;
-}
-
-/* Only rendered off the home page. Slides in from the left on hover so the
-   affordance is felt before it is read. */
-.wordmark-back {
-  flex: none;
-  margin-right: 7px;
-  color: var(--accent);
-  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-.wordmark:hover .wordmark-back {
-  transform: translateX(-3px);
+  border-bottom: 0;
 }
 
 /* ------------------------------------------------------ contract address */

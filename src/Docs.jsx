@@ -31,7 +31,6 @@ const CHAPTERS = [
   ['sweeping', 'Sweeping'],
   ['selling', 'Selling a desk'],
   ['reference', 'Program reference'],
-  ['status', IS_MAINNET ? 'Status' : 'Devnet status'],
 ];
 
 /// Which chapter the reader is in.
@@ -702,58 +701,6 @@ export default function Docs({ config, engine, tickers }) {
               <span>vault</span>
               <span>[&quot;mpl-core-execute&quot;, asset] · under Core</span>
             </div>
-          </div>
-        </Chapter>
-
-        {/* ------------------------------------------------------------ 13 */}
-        <Chapter
-          id="status"
-          title={`13 · ${IS_MAINNET ? 'Status' : 'Devnet status'}`}
-          aside="What is not done"
-        >
-          <p>
-            {IS_MAINNET
-              ? 'Known gaps, stated rather than buried:'
-              : 'Primates is running on devnet. The stocks are mock mints with no value, the SOL is test SOL, and the whole thing can be reset without warning. Known gaps, stated rather than buried:'}
-          </p>
-
-          <ul className="doc-list">
-            <li>
-              <b>Fee sweeping is not autonomous yet.</b> Creator fees are collected
-              by an operator key. pump.fun&apos;s fee-sharing config can make the
-              split on-chain and permissionless, which removes that key from the
-              recurring loop — that is designed, not shipped.
-            </li>
-            <li>
-              <b>Buying is not on-chain.</b> The engine credits what arrives in its
-              holding account; the purchase itself happens off-chain. Closing that
-              gap means a program-owned pot and a swap CPI.
-            </li>
-            <li>
-              <b>Metadata still points at placeholder art</b> rather than the
-              generated sprites the site renders.
-            </li>
-            <li>
-              <b>Mint ordering is approximate.</b> Serial numbers are per tier, and a
-              true global ordering needs a DAS index.
-            </li>
-            <li>
-              <b>Securities and jurisdiction review has not happened.</b> xStocks
-              exclude U.S. persons, and that question needs answering before mainnet
-              rather than after.
-            </li>
-          </ul>
-
-          <div className="notice">
-            <TriangleAlert size={16} strokeWidth={2} aria-hidden />
-            {/* The offer/advice half is true on any network and stays; only the
-                test-asset half is devnet-specific. */}
-            <span>
-              Nothing here is an offer, and none of it is investment advice.
-              {IS_MAINNET
-                ? ' Tokenised assets carry the issuer’s own eligibility and redemption terms.'
-                : ' Devnet assets have no value and are not redeemable for anything.'}
-            </span>
           </div>
         </Chapter>
       </div>
