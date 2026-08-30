@@ -46,17 +46,16 @@ Decide first whether to keep the program id `CGcSojUL6xeXatcZ9RDzrqUqSucVnAR83fj
 token API — **no xStocks API key is needed for any of this.** Their API is for
 market data; mint addresses are on-chain public record.
 
-Copy it over `public/deploy.json` when switching. Two things in it matter:
+The app picks the right manifest from `VITE_CLUSTER` — there is no file to copy.
+Two things in it matter:
 
 - **decimals = 8**, not 6. The devnet mocks are 6. Any code that assumes one
   silently mis-scales the other by 100x. This now comes from `deploy.json`
   rather than a constant, so it follows the file.
 - **tokenProgram = Token-2022** (`TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`).
-  `settleIx`, `sweepIx`, `ataFor` and `createAtaIdempotentIx` still default to
-  classic SPL Token. **This is the remaining code change**: thread
-  `chainCfg.tokenProgram` through them, or every mainnet transfer fails account
-  validation. The program is already built for it (`anchor-spl` has the
-  `token_2022` feature); only the client assumes.
+  Done — every builder takes the program and reads it from `deploy.json`. The
+  on-chain program already accepted either (`InterfaceAccount` over
+  `TokenInterface`), so no program change was needed.
 
 ### 3. Paid RPC
 
