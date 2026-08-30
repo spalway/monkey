@@ -139,7 +139,27 @@ async function serveStatic(res, urlPath) {
 /// client can read, everyone can read. If it is unset the site has no chain to
 /// talk to at all, which is a louder and far better failure than silently
 /// falling back to a public node that will rate-limit under real traffic.
-const UPSTREAM_RPC = process.env.HELIUS_RPC ?? process.env.UPSTREAM_RPC ?? '';
+///
+/// A bare Helius API key is accepted as well as a full URL. That is not
+/// politeness: the key alone has now been pasted into an RPC setting twice,
+/// once here and once into VITE_RPC, and both times the symptom was a JSON
+/// parse error or a 502 that named the wrong component. Building the URL from
+/// a key is unambiguous — a 36-character UUID is not an endpoint anyone meant
+/// literally.
+function resolveUpstream(raw) {
+  const value = (raw ?? '').trim();
+  if (!value) return '';
+  if (/^https?:\/\//i.test(value)) return value;
+  if (/^[0-9a-f-]{32,40}$/i.test(value)) {
+    const net = (process.env.VITE_CLUSTER ?? 'devnet').toLowerCase().startsWith('main')
+      ? 'mainnet'
+      : 'devnet';
+    return `https://${net}.helius-rpc.com/?api-key=${value}`;
+  }
+  return value;
+}
+
+const UPSTREAM_RPC = resolveUpstream(process.env.HELIUS_RPC ?? process.env.UPSTREAM_RPC);
 
 async function proxyRpc(req, res) {
   if (!UPSTREAM_RPC) return send(res, 503, 'text/plain', 'no upstream rpc configured');
