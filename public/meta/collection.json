@@ -1,0 +1,16 @@
+{
+  "name": "Primates",
+  "symbol": "DESK",
+  "description": "Three tiers of desk pass, each owning a vault derived from the NFT itself. Protocol revenue buys tokenised real-world assets on a rotation, and every drop is split across desks by tier weight. Only a desk's current owner can spend from its vault, and the vault transfers with the desk when it is sold.",
+  "image": "https://primates.app/collection_pfp.png",
+  "external_url": "https://primates.app",
+  "properties": {
+    "files": [
+      {
+        "uri": "https://primates.app/collection_pfp.png",
+        "type": "image/png"
+      }
+    ],
+    "category": "image"
+  }
+}

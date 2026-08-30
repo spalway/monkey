@@ -1,0 +1,2853 @@
+@font-face {
+  font-family: "Britti Sans";
+  src: url("/BrittiSansTrial-Regular-BF6757bfd47ffbf.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Britti Sans";
+  src: url("/BrittiSansTrial-Bold-BF6757bfd4a96ed.otf") format("opentype");
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  --bg: #0b0b0b;
+
+  /* Two container layers, like the reference: a dark grey shell holds each
+     section, and the cards inside sit a shade lighter so they read as separate
+     objects on it rather than tinted panels of it. */
+  --shell: #141414;
+  --shell-line: #232323;
+  --card: #1c1c1c;
+  --card-2: #222222;
+  /* Sunk surfaces: the art frame and the stock chips inside a desk card. */
+  --well: #151515;
+  --card-line: #2c2c2c;
+
+  --grid: rgba(255, 255, 255, 0.028);
+  --grid-size: 22px;
+
+  --accent: #ffcf2b;
+  --gold: #e8c04a;
+  --silver: #cdd2d8;
+  --bronze: #c07d4a;
+
+  --text: #f4f3f0;
+  --muted: #8f8f8f;
+  --dim: #5e5e5e;
+  --danger: #d6555f;
+
+  --column: 760px;
+  /* What the shells actually occupy: the column minus the page gutter. The nav
+     bar matches this, not --column, or it overhangs the containers by 16px. */
+  --content: calc(var(--column) - 32px);
+  --radius: 12px;
+  --radius-sm: 9px;
+  /* Logo-to-ticker spacing, shared by the strip, the rotation and the balances
+     so the pairing reads the same everywhere. */
+  --logo-gap-inline: 8px;
+
+  --display: 'Britti Sans', 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* One family everywhere. Figures get tabular-nums so columns still line up
+     without a monospace face. */
+  --mono: var(--display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  position: relative;
+  margin: 0;
+  color: var(--text);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+}
+
+/* A short, faint darkening at the top of the *page*.
+ *
+ * Absolute, not fixed: pinned to the viewport it stayed put while the grid
+ * scrolled underneath it, and the boundary where it faded out read as a second
+ * grid sliding past the first. Anchored to the document it moves with the grid
+ * and there is no edge to see.
+ */
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 300px;
+  z-index: -2;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.42), transparent);
+}
+
+.page {
+  position: relative;
+  width: 100%;
+  max-width: var(--column);
+  margin: 0 auto;
+  padding: 0 16px 120px;
+}
+
+/* --------------------------------------------------------------- typography */
+
+h1,
+h2,
+h3,
+.wordmark,
+.cta,
+button,
+.nav a,
+.strip dd,
+.tier .price {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Small UI, figures and every base58 string stay monospace — that is where the
+   techy read comes from, and it keeps addresses legible. */
+.label,
+.chip,
+.badge,
+.row,
+.log,
+.holdings,
+.rotation > span,
+.steps,
+.tier .weight,
+.tier .supply,
+.bananas + * {
+  font-family: var(--display);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------- floating nav bar */
+
+/* Not pinned: it scrolls away with the page. */
+.masthead {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 0;
+}
+
+.nav-shell {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 100%;
+  max-width: var(--content);
+  padding: 11px 16px;
+  border-radius: 16px;
+}
+
+/*
+ * The yellow is a corner light, not a wash: it is spent inside the first fifth
+ * of the bar and is plain grey from ~40% on. A hairline bright-yellow edge holds
+ * the shape once the fill has gone.
+ */
+.nav-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(100deg, #3a2c07 0%, #241d0e 12%, #16150f 22%, #0e0e0e 44%);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent),
+    0 14px 34px -18px #000;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.wordmark b {
+  color: var(--accent);
+  font-weight: inherit;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.nav a {
+  position: relative;
+  padding: 6px 12px 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  border: 0;
+  transition: color 0.16s ease;
+}
+
+.nav a:hover {
+  color: var(--text);
+}
+
+.nav a.active {
+  color: var(--accent);
+}
+
+/* The line that marks the selection. */
+.nav a.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.connect {
+  margin: 0;
+  width: auto;
+  flex: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--accent);
+  /* Black, not white: the pill is solid accent yellow, and white on it fails
+     contrast at 12px where black clears it comfortably. */
+  color: #0b0b0b;
+  font-size: 12px;
+  font-weight: 700;
+  border: 0;
+  cursor: pointer;
+  transition: filter 0.16s ease, transform 0.16s ease;
+}
+
+.connect:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .nav-shell {
+    gap: 10px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .nav {
+    gap: 0;
+  }
+  .nav a {
+    padding: 6px 8px 7px;
+  }
+  .nav a.active::after {
+    left: 8px;
+    right: 8px;
+  }
+  .connect {
+    padding: 8px 12px;
+  }
+}
+
+/* -------------------------------------------------------------------- hero */
+
+/* The hero and the tier picker are one module: the pitch and the three things it
+   is pitching, in a single container. */
+.hero {
+  border: 1px solid var(--shell-line);
+  border-radius: var(--radius);
+  background: var(--shell);
+  padding: 30px 24px 24px;
+}
+
+.hero h1 {
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+
+/* The white line under the slogan. */
+/* Shares the body copy's weight so the hero reads in one voice; size and
+   colour carry the hierarchy instead. */
+.hero .lede {
+  margin: 0 0 16px;
+  max-width: 54ch;
+  color: var(--text);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.hero p {
+  margin: 0 0 18px;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+/* Same shape as the mint page's button — it leads to that button, so it should
+   look like it: full width and centred rather than an inline pill. */
+.cta {
+  display: block;
+  width: 100%;
+  padding: 15px 20px;
+  text-align: center;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #1a1500;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background 0.25s ease;
+}
+
+.cta:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #fff);
+  border-color: var(--accent);
+}
+
+/* ----------------------------------------------------------------- shells */
+
+section {
+  margin-top: 16px;
+}
+
+/* Every section sits in a shell, and anything inside it is its own card — that
+   nesting is what gives the reference its structure. */
+.shell {
+  border: 1px solid var(--shell-line);
+  border-radius: var(--radius);
+  background: var(--shell);
+  padding: 16px;
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Mirrors .tiers-head so the animations switch is laid out the same in a shell
+   header as it is on the home page. */
+.label > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--dim);
+}
+
+/* Countdown --------------------------------------------------------------- */
+
+/*
+ * Each digit pair is a column of every value it can hold, inside a one-row
+ * window. `--value` slides the column by whole rows; the slide is the animation.
+ * transform, not top, so it stays off the layout path.
+ */
+
+.countdown-row {
+  display: flex;
+  justify-content: center;
+  gap: 26px;
+  margin: 0 0 22px;
+}
+
+.countdown-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.countdown {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.countdown-digits {
+  display: block;
+  transform: translateY(calc(var(--value) * -1em));
+  transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.countdown-digits b {
+  display: block;
+  height: 1em;
+  font-weight: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countdown-digits {
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------ notice */
+
+/* Supply is a hard cap, so the warning about it gets warning treatment. */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  /* Top margin as well as bottom: the notice now sits between two blocks that
+     both end flush, so without it there was no gap above it at all. */
+  margin: 20px 0 22px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: color-mix(in srgb, var(--accent) 78%, #ffffff);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.notice svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+/* Sits above the three tier cards inside the merged module. */
+.tiers-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* Its own space above rather than relying on whatever precedes it — in the
+     Live shell the strip ends flush, so there was no gap at all. Collapses
+     against the notice's larger bottom margin in the hero. */
+  margin-top: 20px;
+  margin-bottom: 12px;
+  color: var(--dim);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.tiers-head > span:last-child,
+.tiers-head > :last-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The call to action closes the module, bottom left. */
+.hero .cta {
+  margin-top: 22px;
+}
+
+/* ------------------------------------------------------------------- tiers */
+
+.tiers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.tier {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--metal) 30%, var(--card-line));
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+
+/* Every tier is outlined only — no glow. Kong is told apart by its metal
+   border colour and by being the largest animal, not by a halo. */
+
+
+/* The art well is a fixed height so the three cards stay aligned while the
+   animals inside them differ in size — otherwise sizing Kong up would push his
+   body text out of step with the other two. */
+.tier figure {
+  margin: 0;
+  height: 124px;
+  padding: 0 0 6px;
+  /* Only the transition here — the greyscale itself belongs to the unselected
+     state, or the landing page (which has no selection) would go grey too. */
+  transition: filter 0.25s ease;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--card-2);
+  border-bottom: 1px solid var(--card-line);
+}
+
+/* Per tier, from TIER_STYLE — see the note there on why these differ. Bottom
+   aligned so they stand on a common floor rather than floating at their own
+   centres. */
+.tier figure svg {
+  display: block;
+  height: var(--art-h, 100px);
+  width: auto;
+  image-rendering: pixelated;
+}
+
+.tier .body {
+  padding: 11px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* Name/bananas and price/weight each share a line. */
+.tier-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tier h3 {
+  margin: 0;
+  color: var(--metal);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bananas {
+  display: flex;
+  gap: 3px;
+  color: var(--accent);
+}
+
+.tier .weight {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.tier .price {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.tier .supply {
+  color: var(--dim);
+  font-size: 12.5px;
+}
+
+/* A corner ribbon rather than a pill: the value multiple is a property of the
+   whole card, and cutting across its corner says that in a way a badge floating
+   inside the padding does not.
+ *
+ * The band is a plain rotated rectangle overhanging both edges; the card's own
+ * `overflow: hidden` is what crops it to the triangle. Nothing here draws the
+ * diagonal — the clip does. */
+.badge {
+  position: absolute;
+  top: 13px;
+  right: -34px;
+  z-index: 1;
+  width: 130px;
+  padding: 3px 0;
+  transform: rotate(45deg);
+  text-align: center;
+  background: linear-gradient(135deg, #46d977 0%, #1f9b4f 100%);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px -4px rgba(0, 0, 0, 0.9);
+}
+
+/* ------------------------------------------------------------------ button */
+
+button {
+  margin-top: auto;
+  width: 100%;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--accent);
+  border: 0;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+button:hover:not(:disabled) {
+  background: #ffd955;
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--card-line);
+  color: var(--dim);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ------------------------------------------------------------------- strip */
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: 16px 0 0;
+}
+
+.strip div {
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  padding: 13px 14px;
+}
+
+.strip dt {
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.strip dd {
+  display: flex;
+  align-items: center;
+  gap: var(--logo-gap-inline);
+  margin: 5px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* Stock artwork ----------------------------------------------------------- */
+
+.stock-logo {
+  display: inline-block;
+  flex: none;
+  border-radius: 4px;
+  vertical-align: -0.18em;
+}
+
+/* Logo loop --------------------------------------------------------------- */
+
+/*
+ * Two identical sets slide left by half the track, so the wrap lands exactly
+ * where the second set begins. Masked at both ends so tiles arrive and leave
+ * rather than appearing at a hard edge.
+ */
+
+.logoloop {
+  overflow: hidden;
+  /* Larger marks, but the band does not grow with them — the padding that used
+     to sit around them comes back out. */
+  margin: 0 0 18px;
+  padding: 0 0 6px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.logoloop-track {
+  display: flex;
+  width: max-content;
+  animation-name: logoloop-slide;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.logoloop-set {
+  display: flex;
+  gap: var(--logo-gap);
+  padding-right: var(--logo-gap);
+}
+
+.logoloop-item {
+  width: var(--logo-size);
+  height: var(--logo-size);
+  border-radius: var(--radius);
+  /* The only lift on the page: the tiles should read as sitting above the
+     container rather than printed on it. */
+  box-shadow:
+    0 10px 20px -10px rgba(0, 0, 0, 0.85),
+    0 2px 6px -2px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes logoloop-slide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logoloop-track {
+    animation: none;
+  }
+}
+
+/* Live section ------------------------------------------------------------ */
+
+/* The stat the rotation is pointing at, lit so it reads before the others. */
+/* A stock's tile is dark grey carrying that stock's own colour. The site accent
+   made every tile say "Primates" when the point is which company it is. */
+.strip div.lit,
+.strip div.stock-tile {
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--card-line));
+  background: var(--card);
+}
+
+/* Only the next buy glows — the last one is a record, not something pending. */
+.strip div.lit {
+  box-shadow: 0 0 18px -10px color-mix(in srgb, var(--brand) 80%, transparent);
+}
+
+.strip div.lit dd,
+.strip div.stock-tile dd,
+.strip div.stock-tile dd a {
+  color: var(--brand);
+}
+
+.strip div.stock-tile dd a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+}
+
+.strip div.stock-tile dd a:hover {
+  filter: brightness(1.15);
+}
+
+/* No container: the countdown sits straight on the shell. It is the one thing in
+   the section that is always changing, so it does not need a box to be found. */
+.live-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 22px 0 4px;
+}
+
+.live-countdown-label {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.live-countdown .countdown-row {
+  margin: 0;
+}
+
+/* Minted list ------------------------------------------------------------- */
+
+.sorts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.sort {
+  margin: 0;
+  width: auto;
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--card-line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+
+.sort:hover:not(.on) {
+  color: var(--text);
+  transform: none;
+  background: transparent;
+}
+
+.sort.on {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.sorts-count {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.minted {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  counter-reset: none;
+}
+
+.minted li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  row-gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  font-size: 12px;
+}
+
+/* Each row carries its own primate, the same one the desks page shows. */
+/* Header line over the primate, both left-aligned. */
+.minted-id {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1 0 100%;
+}
+
+/* Name and allocation together on the left, links pushed to the right. */
+.minted-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+}
+
+.minted-links {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* The same sunk frame the desk cards use, sized down for a list row. */
+.minted-well {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--well);
+}
+
+.minted-art {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.minted-art svg {
+  height: 42px;
+  width: auto;
+  image-rendering: pixelated;
+}
+
+/* The name is plain white; the metal is carried by the allocation figure. */
+.minted-name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.minted-weight {
+  color: var(--metal, var(--accent));
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.minted li .linkbtn:first-of-type {
+  margin-left: auto;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+}
+
+.page-no,
+.page-step {
+  margin: 0;
+  width: auto;
+  min-width: 28px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--card-line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.page-no:hover:not(.on):not(:disabled),
+.page-step:hover:not(:disabled) {
+  color: var(--text);
+  background: transparent;
+  transform: none;
+}
+
+.page-no.on {
+  color: #101010;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+.page-step:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------------- rotation */
+
+.rotation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Each chip carries its own brand colour, so the rotation reads as ten
+   companies rather than ten identical grey pills. Text is mixed toward white
+   because a raw brand colour on a dark card is often below readable contrast. */
+.rotation > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--logo-gap-inline);
+  border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--card-line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand) 8%, var(--card));
+  padding: 6px 11px 6px 8px;
+  color: color-mix(in srgb, var(--brand) 45%, #ffffff);
+  font-size: 11px;
+  font-weight: 500;
+  transition: opacity 0.18s ease, border-color 0.18s ease;
+}
+
+.rotation .slot {
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Already bought this cycle. */
+.rotation > span.done {
+  opacity: 0.45;
+}
+
+/* The one the pot buys next. */
+.rotation > span.next {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 22%, var(--card));
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 18px -7px var(--brand);
+}
+
+.rotation > span.next .slot {
+  color: color-mix(in srgb, #ffffff 65%, transparent);
+}
+
+/* ------------------------------------------------------------------- desks */
+
+.desk {
+  border: 1px solid color-mix(in srgb, var(--metal) 22%, var(--card-line));
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  padding: 14px;
+}
+
+.desk + .desk {
+  margin-top: 10px;
+}
+
+.desk-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.desk-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.desk-links {
+  flex: 0 0 auto;
+}
+
+.desk-head h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Under the name, quiet: it qualifies the desk rather than announcing it. */
+.desk-head .weight {
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.rows {
+  display: grid;
+  gap: 7px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  font-size: 11px;
+}
+
+.row > :first-child {
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.row > :last-child {
+  text-align: right;
+  word-break: break-all;
+}
+
+.holdings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-line);
+}
+
+.holdings span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--logo-gap-inline);
+  background: var(--card-2);
+  border: 1px solid var(--card-line);
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 11px;
+}
+
+.holdings b {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.holdings span.pending {
+  border-style: dashed;
+  color: var(--dim);
+}
+
+.holdings span.pending b {
+  color: var(--gold);
+}
+
+/* -------------------------------------------------------------------- misc */
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.18s ease;
+}
+
+a:hover {
+  border-bottom-color: currentColor;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.steps li {
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  padding: 12px 14px;
+  color: var(--muted);
+}
+
+.steps b {
+  color: var(--accent);
+  margin-right: 10px;
+  font-weight: 700;
+}
+
+.note {
+  border: 1px solid var(--card-line);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  padding: 13px 15px;
+  color: var(--muted);
+}
+
+.note.error {
+  border-left-color: var(--danger);
+  color: var(--danger);
+  white-space: pre-wrap;
+}
+
+.log {
+  color: var(--dim);
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 11px;
+}
+
+footer {
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tiers {
+    grid-template-columns: 1fr;
+  }
+  .hero h1 {
+    font-size: 28px;
+  }
+  .nav a {
+    padding: 6px 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  html {
+    transition: none !important;
+    scroll-behavior: auto;
+  }
+}
+
+.bench-caption {
+  font-size: 12px;
+  opacity: 0.65;
+  margin-top: 6px;
+}
+
+/* Animations switch ------------------------------------------------------- */
+
+/*
+ * Label left, switch right. The track is the label's ::before, which would
+ * normally render ahead of the text, so `order` pushes it to the end — and the
+ * knob is then positioned from the right edge to follow it.
+ */
+
+.checkbox-wrapper-35 .switch {
+  display: none;
+}
+
+.checkbox-wrapper-35 .switch + label {
+  align-items: center;
+  color: var(--dim);
+  cursor: pointer;
+  display: flex;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 15px;
+  position: relative;
+  user-select: none;
+  /* The section header it sits in is uppercase and letter-spaced; the switch is
+     not part of that label. */
+  text-transform: none;
+  letter-spacing: 0;
+  transition: color 0.125s ease-out;
+}
+
+.checkbox-wrapper-35 .switch:checked + label {
+  color: var(--accent);
+}
+
+.checkbox-wrapper-35 .switch + label::before,
+.checkbox-wrapper-35 .switch + label::after {
+  content: '';
+  display: block;
+}
+
+.checkbox-wrapper-35 .switch + label::before {
+  order: 2;
+  background-color: var(--card-line);
+  border-radius: 500px;
+  height: 15px;
+  margin-left: 9px;
+  transition: background-color 0.125s ease-out;
+  width: 25px;
+}
+
+/* 25px track, 13px knob: 11px from the right edge parks it at the track's left,
+   and a 10px nudge parks it at the track's right. */
+.checkbox-wrapper-35 .switch + label::after {
+  background-color: #fff;
+  border-radius: 13px;
+  box-shadow:
+    0 3px 1px 0 rgba(0, 0, 0, 0.28),
+    0 2px 2px 0 rgba(0, 0, 0, 0.22),
+    0 3px 3px 0 rgba(0, 0, 0, 0.18);
+  height: 13px;
+  position: absolute;
+  right: 11px;
+  top: 1px;
+  transition: transform 0.125s ease-out;
+  width: 13px;
+}
+
+.checkbox-wrapper-35 .switch + label .switch-x-text {
+  display: block;
+}
+
+.checkbox-wrapper-35 .switch:checked + label::before {
+  background-color: var(--accent);
+}
+
+.checkbox-wrapper-35 .switch:checked + label::after {
+  transform: translate3d(10px, 0, 0);
+}
+
+/* Keyboard focus has to survive `display: none` on the input. */
+.checkbox-wrapper-35 .switch:focus-visible + label::before {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Per-desk art ------------------------------------------------------------ */
+
+
+/* Animal left, its links right, on one line. */
+.desk-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+/* A sunk square behind the animal, the same grey the stock chips sit on, so the
+   art reads as a framed thing rather than as loose pixels on the card. */
+.desk-well {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--well);
+}
+
+.desk-art {
+  margin: 0;
+}
+
+.desk-art svg {
+  height: 76px;
+  width: auto;
+  image-rendering: pixelated;
+}
+
+/* Choosing a desk ---------------------------------------------------------- */
+/* The cards are a choice, not a link, so they do not lift on hover — only the
+   chosen one changes, and it changes decisively. Unchosen cards sit back. */
+
+.tier.selectable {
+  cursor: pointer;
+}
+
+/* Unchosen desks are greyscale; choosing one is what gives it its colour back.
+   The art is filtered rather than the whole card so the price and supply stay
+   readable while the card is inert. */
+.tier.selectable:not(.selected) figure {
+  filter: grayscale(1);
+}
+
+.tier.selectable:not(.selected):hover figure {
+  filter: grayscale(0.55);
+}
+
+.tier.selected {
+  border-color: var(--metal);
+}
+
+.tier.selected figure {
+  filter: none;
+}
+
+.tier.sold-out {
+  opacity: 0.35;
+}
+
+.tier.selectable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* One button for all three tiers. Grey until a desk is chosen and the wallet is
+   up; yellow the moment the click would actually do something. */
+.mint-cta {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 15px 20px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border-radius: var(--radius-sm);
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+/* Doubled class so this beats the global `button:disabled`, which is also two
+   levels deep and would otherwise strip the grey back to transparent. */
+.mint-cta:disabled,
+.mint-cta.mint-cta:disabled {
+  border: 1px solid var(--card-line);
+  background: var(--card);
+  color: var(--dim);
+  cursor: not-allowed;
+}
+
+.mint-cta.ready {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #1a1500;
+  cursor: pointer;
+}
+
+.mint-cta.ready:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #fff);
+}
+
+.points {
+  margin-right: 10px;
+}
+
+/* Asset and vault, as links rather than 44 characters of base58 each. */
+.desk-links {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.linkbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--metal) 28%, var(--card-line));
+  border-radius: 7px;
+  background: color-mix(in srgb, #000 22%, transparent);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+
+.linkbtn:hover {
+  color: var(--metal);
+  border-color: var(--metal);
+}
+
+/* The allocation bar is the divider now, so the chips below it do not need a
+   second rule above them. */
+.desk .holdings {
+  border-top: 0;
+  padding-top: 0;
+}
+
+/* A holding wears its own company's colour — mark, ticker and amount together,
+   so the chip reads as that stock rather than as the desk it sits in. */
+.desk .holdings span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--well);
+  border-color: color-mix(in srgb, var(--brand) 45%, var(--card-line));
+  /* Lifted toward white like the rotation chips: several brand colours (Coinbase
+     blue, Broadcom red) sit below readable contrast on a near-black chip at full
+     strength, and the point is to recognise the company, not to match a swatch. */
+  color: color-mix(in srgb, var(--brand) 60%, #ffffff);
+  font-weight: 700;
+}
+
+/* Inherited, not restated — the amount is the same colour as the ticker by
+   construction rather than by two rules agreeing. */
+.desk .holdings b {
+  color: inherit;
+  font-weight: 700;
+}
+
+/* Pending is the same colour, dimmed — still legibly that stock. */
+.desk .holdings span.pending {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--brand) 26%, var(--card-line));
+  color: color-mix(in srgb, var(--brand) 40%, var(--muted));
+}
+
+.desk .holdings span.pending b {
+  color: inherit;
+}
+
+/* Allocation bar ----------------------------------------------------------- */
+
+.alloc {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  margin: 14px 0 12px;
+  border-radius: 999px;
+  overflow: visible;
+}
+
+.alloc-seg {
+  position: relative;
+  min-width: 6px;
+  border-radius: 999px;
+  background: var(--brand);
+  transition: filter 0.18s ease, box-shadow 0.18s ease;
+  cursor: default;
+}
+
+.alloc-seg:first-child { border-start-start-radius: 999px; border-end-start-radius: 999px; }
+.alloc-seg:last-child { border-start-end-radius: 999px; border-end-end-radius: 999px; }
+
+.alloc-seg:hover,
+.alloc-seg:focus-visible {
+  filter: brightness(1.25);
+  box-shadow: 0 0 14px -2px var(--brand);
+  outline: none;
+}
+
+/* Hidden until its segment is hovered. Positioned from the segment's own centre
+   so it tracks whichever slice you are pointing at. */
+.alloc-tip {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--brand) 45%, var(--card-line));
+  border-radius: 8px;
+  background: var(--well);
+  color: color-mix(in srgb, var(--brand) 60%, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.alloc-seg:hover .alloc-tip,
+.alloc-seg:focus-visible .alloc-tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.alloc-tip b {
+  color: inherit;
+  font-weight: 700;
+}
+
+.alloc-tip-share {
+  color: var(--dim);
+  font-weight: 500;
+}
+
+/* An empty vault still gets a bar, greyed. */
+.alloc.empty .alloc-seg {
+  background: var(--card-line);
+}
+
+.alloc.empty .alloc-seg:hover,
+.alloc.empty .alloc-seg:focus-visible {
+  filter: brightness(1.25);
+  box-shadow: none;
+}
+
+.alloc.empty .alloc-tip {
+  border-color: var(--card-line);
+  color: var(--muted);
+}
+
+/* In the minted rows the bar is a full-width line under the row's contents. */
+.minted li {
+  flex-wrap: wrap;
+}
+
+.minted li .alloc {
+  flex: 1 0 100%;
+  margin: 2px 0 0;
+}
+
+/* Contracts ---------------------------------------------------------------- */
+
+/* The addresses sit in their own card, a shade lighter than the shell, so the
+   block reads as a panel rather than as loose rows on the section. */
+.contracts-rows {
+  padding: 13px 14px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+
+/* --------------------------------------------------------------- sweeping */
+
+/* The two ways out of a desk, on one line under the allocation bar. */
+.desk-actions {
+  display: flex;
+  /* Not the default `stretch`: that made both buttons as tall as the tallest
+     thing inside either of them, so the fee chip was silently setting the
+     height of the Sweep button next to it. */
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+/* Sized off .linkbtn, not by eye: these sit directly under Asset and Vault in
+   the same card, and two button scales in one card reads as a mistake. Every
+   metric below is that rule's — padding, radius, gap, size. Only the weight is
+   raised, because these do something and those two are links. */
+.act {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  /* The global `button` rule is written for the full-width page CTAs: it forces
+     width 100%, margin-top auto, and a grey inset ring when disabled. All three
+     have to be undone here, and `line-height` set explicitly — a button does not
+     inherit the body's, so without this the two sit at different heights while
+     every other metric matches. */
+  width: auto;
+  flex: none;
+  margin: 0;
+  /* 17.6px, not 1.6 — a button rounds its line box up to whole pixels where an
+     anchor does not, which left the two 0.4px apart on a metric that is
+     otherwise identical. */
+  line-height: 17.6px;
+  box-shadow: none;
+  padding: 4px 9px;
+  border-radius: 7px;
+  /* Transparent rather than absent, so the gradient variant below keeps the
+     same box height as the bordered one. */
+  border: 1px solid transparent;
+  background: color-mix(in srgb, #000 22%, transparent);
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease, filter 0.16s ease;
+}
+
+/* `button:disabled` draws a grey inset ring and is one specificity point above
+   a bare class, so clearing it takes a rule at least as specific. Kept even
+   though these buttons now use aria-disabled, because the ring would come back
+   the moment one of them is given the real attribute. */
+.act:disabled,
+.act[aria-disabled='true'] {
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* The count sits left and pushes both buttons to the right edge, so the row
+   lines up under Asset and Vault above it. */
+.held-count {
+  margin-right: auto;
+  color: var(--dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Why a control is unavailable, on hover and on keyboard focus — the button
+   keeps focus precisely because aria-disabled leaves it reachable. */
+.act[data-tip] {
+  position: relative;
+}
+
+.act[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border: 1px solid var(--card-line);
+  border-radius: 6px;
+  background: #0b0b0b;
+  color: var(--text);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.14s ease;
+}
+
+.act[data-tip]:hover::after,
+.act[data-tip]:focus-visible::after {
+  opacity: 1;
+}
+
+/* Sweep is red in both states — it is the one control that moves balances, and
+   that should not be something the button stops saying when it happens to be
+   empty. An empty vault lightens it rather than draining the colour out, so
+   "nothing to take" and "not a sweep button" never look alike. */
+.act.sweep {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.act.sweep:hover:not([aria-disabled='true']) {
+  color: #ffffff;
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 26%, transparent);
+}
+
+/* Lighter, not faded: opacity would take the border and the glyph down with it
+   and land somewhere near grey. */
+.act.sweep[aria-disabled='true'] {
+  color: color-mix(in srgb, var(--danger) 52%, var(--card));
+  border-color: color-mix(in srgb, var(--danger) 20%, transparent);
+  background: color-mix(in srgb, var(--danger) 5%, transparent);
+}
+
+/* Magic Eden's own magenta, so the button looks like where it goes. */
+.act.sell {
+  background: linear-gradient(100deg, #ff3fae 0%, #c02ae0 100%);
+  color: #ffffff;
+}
+
+.act.sell:hover {
+  color: #ffffff;
+  filter: brightness(1.12);
+}
+
+/* White plate under the figure: red on magenta is two saturated colours with
+   almost no separation, and the fee is the part that has to be read. */
+.act .fee {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 700;
+  /* Its own line box, or it inherits the button's 17.6px and the chip alone
+     becomes taller than the text it sits beside. */
+  line-height: 13px;
+}
+
+/* Dialog ------------------------------------------------------------------ */
+
+.sweep-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+  animation: sweep-in 0.16s ease;
+}
+
+.sweep-panel {
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 16px;
+  border: 1px solid var(--shell-line);
+  border-radius: var(--radius);
+  background: var(--shell);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@keyframes sweep-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sweep-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sweep-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.sweep-close {
+  display: inline-flex;
+  padding: 5px;
+  border: 1px solid var(--card-line);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.sweep-close:hover:not(:disabled) {
+  color: var(--text);
+}
+
+/* The desk itself, walking, on its own line — it is the thing being emptied. */
+.sweep-art {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 10px 0 6px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--well);
+}
+
+.sweep-art figure {
+  margin: 0;
+}
+
+.sweep-art svg {
+  display: block;
+  height: 96px;
+  width: auto;
+  image-rendering: pixelated;
+}
+
+.sweep-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: opacity 0.18s ease, filter 0.18s ease;
+}
+
+/* Checking "sweep all" takes the per-stock controls out of play. They stay
+   readable rather than hidden, because the amounts beside them are still the
+   answer to what is about to move. */
+.sweep-rows.muted .sweep-token,
+.sweep-rows.muted .sweep-steps {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.sweep-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+
+/* Mark and ticker take the stock's own colour, lifted toward white the same way
+   the desk chips are; the quantity stays white because it is a number, not an
+   identity. */
+.sweep-token {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--logo-gap-inline);
+  min-width: 0;
+  flex: 1 1 auto;
+  transition: opacity 0.18s ease, filter 0.18s ease;
+}
+
+.sweep-token b {
+  color: color-mix(in srgb, var(--brand) 60%, #ffffff);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.sweep-qty {
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.sweep-steps {
+  display: inline-flex;
+  gap: 3px;
+  flex: 0 0 auto;
+  transition: opacity 0.18s ease, filter 0.18s ease;
+}
+
+.sweep-steps button {
+  padding: 3px 6px;
+  border: 1px solid var(--card-line);
+  border-radius: 6px;
+  background: var(--well);
+  color: var(--dim);
+  font-family: var(--display);
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+
+.sweep-steps button:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.sweep-steps button.on {
+  color: #0b0b0b;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.sweep-steps button:disabled {
+  cursor: not-allowed;
+}
+
+/* Green is the whole point of this column: it is what lands in the wallet. */
+.sweep-take {
+  flex: 0 0 auto;
+  min-width: 66px;
+  text-align: right;
+  color: var(--dim);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sweep-take.live {
+  color: #3fcf6a;
+}
+
+.sweep-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: color-mix(in srgb, var(--accent) 78%, #ffffff);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sweep-all input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.sweep-all-total {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Red because it is the one control here that moves balances. */
+.sweep-go {
+  padding: 11px 14px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--danger);
+  color: #ffffff;
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.16s ease;
+}
+
+.sweep-go:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+/* The global `button:disabled` sets background to transparent and outranks a
+   plain class, so the red has to be restated here or the button reads as an
+   empty outline rather than a dimmed action. */
+.sweep-go:disabled {
+  background: var(--danger);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 520px) {
+  .sweep-row {
+    flex-wrap: wrap;
+  }
+  .sweep-take {
+    min-width: 0;
+  }
+}
+
+/* The site's banana, used as the weight pip on a tier card and beside the
+   wordmark. Both are the same mark at different sizes. */
+.banana-pip {
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+/* ------------------------------------------------------- nav: X / docs */
+
+/* A pill now that it carries the handle, matched to .connect's height so the
+   two sit on one line rather than stepping. */
+.nav-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: none;
+  height: 32px;
+  padding: 0 11px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, #000 30%, transparent);
+  color: var(--muted);
+  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.nav-x:hover {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+@media (max-width: 640px) {
+  .nav-x {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ docs */
+
+.doc {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.doc p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.doc b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.doc em {
+  color: var(--text);
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* Addresses and seeds sit inline in the prose often enough to need a treatment
+   that does not break the line rhythm. */
+.doc code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--well);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.doc-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.doc-list::marker,
+.doc-list li::marker {
+  color: var(--accent);
+}
+
+/* The tier table. Four columns on one grid so the figures line up down the
+   page rather than per row. */
+.doc-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.doc-table-head,
+.doc-table-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
+  gap: 10px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Three columns, the last one prose. Used by the instruction reference, where
+   the third column is a sentence rather than a figure. */
+.doc-table.wide .doc-table-head,
+.doc-table.wide .doc-table-row {
+  grid-template-columns: 1.1fr 0.6fr 2.6fr;
+  align-items: baseline;
+}
+
+.doc-table-head {
+  background: var(--card-2);
+  color: var(--dim);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doc-table-row {
+  background: var(--card);
+  color: var(--muted);
+}
+
+.doc-table-row + .doc-table-row {
+  border-top: 1px solid var(--card-line);
+}
+
+.doc-table-row span:first-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+
+/* ----------------------------------------------------------- docs layout */
+
+/* The rail sits outside the reading column rather than shrinking it: the
+   column is 760px and tuned for prose, and splitting it to make room would
+   make every other page's measure wrong for the sake of this one. Below the
+   width where that fits, the rail becomes an ordinary card above the text. */
+.docs-rail {
+  margin: 0 0 14px;
+  padding: 12px 13px;
+  border: 1px solid var(--shell-line);
+  border-radius: var(--radius);
+  background: var(--shell);
+}
+
+.docs-rail-head {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.docs-rail ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.docs-rail a {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  transition: color 0.14s ease, background 0.14s ease;
+}
+
+.docs-rail a:hover {
+  color: var(--text);
+  background: color-mix(in srgb, #fff 5%, transparent);
+}
+
+.docs-rail a.on {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.docs-rail-n {
+  color: var(--dim);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.docs-rail a.on .docs-rail-n {
+  color: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+/* Clears the chapter heading from the top of the window when an anchor jumps. */
+.chapter {
+  scroll-margin-top: 20px;
+}
+
+@keyframes rail-in {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Pinned to the left edge of the window rather than to the reading column, and
+   sized by whatever room is left beside it, so it grows on a wide screen and
+   shrinks toward the breakpoint instead of ever overlapping the text.
+ *
+ * 415 = half the 760 column, plus the gutter it must not cross, plus room for a
+ * scrollbar: `vw` counts the scrollbar but the centred column is laid out in the
+ * content box without it, so a formula derived from the column width alone puts
+ * the rail through the text by half a scrollbar. */
+@media (min-width: 1140px) {
+  .docs-rail {
+    position: fixed;
+    top: 92px;
+    left: 14px;
+    width: min(212px, calc(50vw - 415px));
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+    margin: 0;
+    animation: rail-in 0.34s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+
+  /* One chapter per line. */
+  .docs-rail ol {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 1px;
+  }
+
+  /* One continuous vertical line the marker rides, rather than a border per
+     item that would break into dashes. */
+  .docs-rail li {
+    border-left: 2px solid var(--card-line);
+    transition: border-color 0.22s ease;
+    animation: rail-in 0.3s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+    animation-delay: calc(90ms + var(--i, 0) * 22ms);
+  }
+
+  .docs-rail a {
+    border-radius: 0 6px 6px 0;
+  }
+
+  .docs-rail li:has(a.on) {
+    border-left-color: var(--accent);
+  }
+}
+
+/* The rail arrives on navigation, which is exactly the movement this setting
+   asks to be spared. The layout is unaffected. */
+@media (prefers-reduced-motion: reduce) {
+  .docs-rail,
+  .docs-rail li {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------ docs pieces */
+
+/* Art sheets. Dark plate behind them because the source images are cut on
+   black and a lighter surround would show the seam. */
+.plate {
+  margin: 2px 0;
+  padding: 12px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--well);
+}
+
+.plate img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+  image-rendering: pixelated;
+}
+
+.plate figcaption {
+  margin-top: 10px;
+  color: var(--dim);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.tier-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.tier-plate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 12px 10px 11px;
+  border: 1px solid color-mix(in srgb, var(--metal) 26%, var(--card-line));
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+
+.tier-plate figure {
+  margin: 0 0 4px;
+  height: 84px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.tier-plate svg {
+  display: block;
+  height: 78px;
+  width: auto;
+  image-rendering: pixelated;
+}
+
+.tier-plate b {
+  color: var(--metal);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.tier-plate span {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+/* Worked ticker examples. */
+.ticker-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.ticker-card {
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--brand) 28%, var(--card-line));
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+
+.ticker-card-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-bottom: 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--card-line);
+}
+
+.ticker-card-head > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ticker-card-head b {
+  /* Lifted toward white for the same reason the desk chips are: several of
+     these marks sit below readable contrast on a near-black card. */
+  color: color-mix(in srgb, var(--brand) 60%, #ffffff);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ticker-card-head span {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.ticker-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11.5px;
+  line-height: 1.9;
+}
+
+.ticker-card-row > span:first-child {
+  color: var(--dim);
+}
+
+.ticker-card-row > span:last-child,
+.ticker-card-row a {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ticker-card-row a:hover {
+  color: color-mix(in srgb, var(--brand) 60%, #ffffff);
+}
+
+/* A real monospace here, not the display face: these blocks are column-aligned
+   account tables and the site's proportional stack would break the alignment
+   they exist to show. */
+.doc-code {
+  margin: 0;
+  padding: 12px 13px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--well);
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.65;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.stat-grid > div {
+  padding: 11px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+
+.stat-grid dt {
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.stat-grid dd {
+  margin: 1px 0 3px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stat-grid small {
+  display: block;
+  color: var(--dim);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.docs-rotation {
+  margin: 2px 0;
+}
+
+@media (max-width: 640px) {
+  .tier-gallery,
+  .ticker-cards {
+    grid-template-columns: 1fr;
+  }
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .doc-table-head,
+  .doc-table-row,
+  .doc-table.wide .doc-table-head,
+  .doc-table.wide .doc-table-row {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 4px;
+  }
+}
+
+/* ---------------------------------------------------------- heading track */
+
+/* Headings sit slightly open rather than tight. At display sizes the words in
+   a phrase like "How Primates works" ran into each other; a hundredth of an em
+   separates them without reading as deliberately spaced-out. Overrides the
+   -0.01em in the shared display rule above, which suits the wordmark and the
+   buttons but not running headings. */
+h1,
+h2,
+h3 {
+  letter-spacing: 0.01em;
+}
+
+/* ------------------------------------------------------------ mint success */
+
+.win-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(4px);
+  animation: win-fade 0.2s ease;
+}
+
+/* Above the backdrop and below the dialog, so the paper falls in front of the
+   dimmed page but never over the addresses being read. */
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes win-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes win-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.win {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 470px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--shell-line));
+  border-radius: var(--radius);
+  background: var(--shell);
+  text-align: center;
+  animation: win-rise 0.26s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.win-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: auto;
+  margin: 0;
+  padding: 5px;
+  display: inline-flex;
+  border: 1px solid var(--card-line);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.win-close:hover {
+  color: var(--text);
+  background: var(--card);
+}
+
+.win h2 {
+  margin: 2px 0 4px;
+  color: var(--accent);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.win-sub {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.win-sub b {
+  font-weight: 700;
+}
+
+.win-art {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px 0 8px;
+  margin-bottom: 14px;
+  border: 1px solid color-mix(in srgb, var(--metal) 26%, var(--card-line));
+  border-radius: var(--radius-sm);
+  background: var(--well);
+}
+
+.win-art figure {
+  margin: 0;
+}
+
+.win-art svg {
+  display: block;
+  height: 108px;
+  width: auto;
+  image-rendering: pixelated;
+}
+
+.win-line {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.65;
+  text-align: left;
+}
+
+.win-line b {
+  font-weight: 700;
+}
+
+/* Address rows ------------------------------------------------------------- */
+
+.copyline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 9px 10px;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--well);
+}
+
+/* The address wraps rather than truncating: this is the one place a holder
+   might read it against something else, and an ellipsis would defeat that. */
+.copyline a {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--accent);
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: left;
+  word-break: break-all;
+}
+
+.copyline a:hover {
+  text-decoration: underline;
+}
+
+.copyline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  padding: 5px 9px;
+  border: 1px solid var(--card-line);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.14s ease, border-color 0.14s ease;
+}
+
+.copyline-btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--muted);
+  background: var(--card);
+  transform: none;
+}
+
+.win-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 4px;
+}
+
+.win-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--display);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: filter 0.16s ease, border-color 0.16s ease;
+}
+
+/* Black, X's own colour, with a hairline so it does not disappear into the
+   dialog behind it. */
+.win-btn.share {
+  background: #000000;
+  border-color: #2f2f2f;
+  color: #ffffff;
+}
+
+.win-btn.share:hover {
+  border-color: var(--muted);
+}
+
+.win-btn.done {
+  background: var(--accent);
+  color: #0b0b0b;
+}
+
+.win-btn.done:hover {
+  filter: brightness(1.08);
+  background: var(--accent);
+  transform: none;
+}
+
+@media (max-width: 480px) {
+  .win-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------- changelog */
+
+/* Everything an article is lives in one container, so it gets the padding
+   rather than each block. */
+.shell.article {
+  overflow: hidden;
+  padding: 20px;
+}
+
+/* The thumbnail runs past the container's padding on three sides.
+ *
+ * That overhang is the point rather than a flourish: each thumbnail carries its
+ * own near-black ground, and a gap would put a hairline of the container's grey
+ * beside it that reads as a seam wherever the two do not match exactly. Bleeding
+ * to the border means a new thumbnail never has to be colour-matched to the site.
+ */
+.article-thumb {
+  margin: -21px -21px 16px;
+  line-height: 0;
+  background: #0f0f0f;
+}
+
+.article-thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 5px 10px 5px 8px;
+  border: 1px solid var(--card-line);
+  border-radius: 7px;
+  background: var(--well);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+
+.back:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.article-head {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 6px;
+}
+
+.article-n {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.article-ver {
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--card-line);
+  background: var(--well);
+  color: var(--dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.article-title {
+  margin: 0 0 16px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+
+/* Reuses the docs prose rules — an article and a chapter are the same kind of
+   reading, so they should not be two typographies. */
+.article-body {
+  gap: 13px;
+}
+
+.article-h {
+  margin: 8px 0 -2px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* The list ---------------------------------------------------------------- */
+
+.article-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.article-card {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--card-line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: inherit;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.article-card:hover {
+  border-color: color-mix(in srgb, var(--accent-a, var(--accent)) 45%, var(--card-line));
+  transform: translateY(-1px);
+}
+
+/* Inside a card the thumbnail is the top of the card, so it has no bleed to do
+   — it is already flush, and the card's own overflow rounds it. */
+.article-thumb.in-card {
+  margin: 0;
+}
+
+.article-card-body {
+  padding: 13px 14px 15px;
+}
+
+.article-card h2 {
+  margin: 0 0 5px;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.article-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .shell.article {
+    padding: 14px;
+  }
+  .article-thumb {
+    margin: -15px -15px 14px;
+  }
+  .article-title {
+    font-size: 24px;
+  }
+}

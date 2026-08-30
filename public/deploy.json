@@ -1,0 +1,17 @@
+{
+  "collection": "4n3bTnJ4G1cneY1hjJ4SZHJFu4jj1zhh9r1rrVx7LzGW",
+  "treasury": "EKdPynUEDpwgwFDptt97BNEut26mCCGALqFQUp8tL1gm",
+  "stocks": {
+    "AAPLx": "F4zhqgBbMXv6ZfQ6L53ThaVSKxttmrRMMKTmYuHpdkpN",
+    "MSFTx": "4xuXpu1tcCM8db7s1y9dnGXbfmm6cAdADdY2k5CYK3b1",
+    "NVDAx": "CBmhqTKbiM2r7dbtGFmdAmG38s1WpmXmhGrix9mcXDeb",
+    "AMZNx": "2eaeaPdz612m2CJJ8b4BNesKbEtY3sTq6TNcbkpgp79m",
+    "METAx": "CJaRVrUjcgL3H5NJ5W1GhJCM44vaHNqwwVW78FFBaRkv",
+    "GOOGLx": "2xXdFiXGwHx6phymaai97Qetrz9mJsLGJ2HoXHUmNMp5",
+    "TSLAx": "DSApqf23SyLuRQpqLBPX8XjYox4gotXxviST1EGA2q7X",
+    "SPYx": "7f5zm9wHF3rMQfWnvHUg1vYK2DyrTA5ZWqL6niauze88",
+    "COINx": "5tEix2xEXtr5j3R3ZuxmZgZBkcPPsY9FxvANrrSfTodP",
+    "AVGOx": "5fV1B7YfeUFVzQw8ZRVtpRHxtkwaBTxjgyryhYcQknaQ"
+  },
+  "stockDecimals": 6
+}

@@ -1,0 +1,30 @@
+{
+  "rpc": "https://api.devnet.solana.com",
+  "collectionName": "Primates",
+  "uriBase": "http://localhost:5173/meta",
+  "royaltyBasisPoints": 500,
+  "prices": {
+    "monkey": 0.1,
+    "ape": 0.3,
+    "kong": 0.5
+  },
+  "supply": {
+    "monkey": 2500,
+    "ape": 750,
+    "kong": 100
+  },
+  "treasury": null,
+  "protocolBps": 2000,
+  "roundIntervalSeconds": 600,
+  "roundPotSol": 1,
+  "dustFloorUnits": 0.000001,
+  "pump": {
+    "mode": "share",
+    "rpc": "https://api.mainnet-beta.solana.com",
+    "mint": null,
+    "creator": null,
+    "minSweepSol": 0.05,
+    "protocolWallet": null,
+    "potWallet": null
+  }
+}

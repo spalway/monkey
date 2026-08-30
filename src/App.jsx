@@ -1,0 +1,128 @@
+// Shell and router. Devnet: signs with a hardcoded controller wallet fetched
+// from /dev-wallet.json, so there is no extension and no approval popup.
+
+import { useEffect, useState } from 'react';
+import { explorer } from './cluster.js';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { PROGRAM_ID, TIERS } from './primates.js';
+import { useChain } from './useChain.js';
+import Landing from './Landing.jsx';
+import Contracts from './Contracts.jsx';
+import Mint from './Mint.jsx';
+import Vaults from './Vaults.jsx';
+import Docs from './Docs.jsx';
+import Changelog from './Changelog.jsx';
+import Testing from './Testing.jsx';
+
+const TWITTER = 'https://x.com/primatespl';
+
+/// lucide dropped its brand icons, and its `X` is the close cross, not this.
+function XLogo(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden {...props}>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+const short = (key) => {
+  const s = key.toString();
+  return `${s.slice(0, 4)}…${s.slice(-4)}`;
+};
+
+/// Hash routing — two pages do not justify a router dependency, and it keeps
+/// the site deployable as static files with no server rewrites.
+function useRoute() {
+  const [route, setRoute] = useState(() => window.location.hash.slice(2) || '');
+  useEffect(() => {
+    const onHash = () => {
+      setRoute(window.location.hash.slice(2) || '');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  return route;
+}
+
+export default function App() {
+  const route = useRoute();
+  // "changelog/introducing-primates-app" -> section + param. One split is the
+  // whole router; nesting deeper than this would be the point to take a
+  // dependency rather than to grow this.
+  const [section, param] = route.split('/');
+  const chain = useChain();
+  const { wallet, balance, config } = chain;
+
+  // Allocation bought per SOL, measured against the entry tier. Derived from the
+  // on-chain prices rather than written down, so it cannot go stale when prices
+  // change. Only shown where the edge is real.
+  const valueMultiple = (tier) => {
+    if (!config) return null;
+    const perWeight = (t) => config.prices[t.id] / t.weight;
+    const multiple = perWeight(TIERS[0]) / perWeight(tier);
+    return multiple >= 1.05 ? `${multiple.toFixed(1)}× value` : null;
+  };
+
+  return (
+    <div className="page">
+      <header className="masthead">
+        <div className="nav-shell">
+          <h1 className="wordmark">
+            Primates<b>.fun</b>
+          </h1>
+
+          <nav className="nav">
+            <a href="#/" className={section === '' ? 'active' : ''}>
+              Home
+            </a>
+            <a href="#/mint" className={section === 'mint' ? 'active' : ''}>
+              Mint
+            </a>
+            <a href="#/docs" className={section === 'docs' ? 'active' : ''}>
+              Docs
+            </a>
+            <a href="#/changelog" className={section === 'changelog' ? 'active' : ''}>
+              Changelog
+            </a>
+          </nav>
+
+          <a
+            className="nav-x"
+            href={TWITTER}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Primates on X"
+          >
+            <XLogo width={12} height={12} />
+            <span>@primatespl</span>
+          </a>
+
+          <button className="connect" type="button">
+            {wallet ? short(wallet.publicKey) : 'Connect'}
+          </button>
+        </div>
+      </header>
+
+      {section === 'mint' ? (
+        <Mint {...chain} valueMultiple={valueMultiple} />
+      ) : section === 'docs' ? (
+        <Docs {...chain} />
+      ) : section === 'changelog' ? (
+        <Changelog slug={param} />
+      ) : section === 'vaults' ? (
+        // Off the nav — the desks and their vaults live on the mint page now —
+        // but the route still resolves so old links do not break.
+        <Vaults {...chain} />
+      ) : section === 'testing' ? (
+        <Testing {...chain} valueMultiple={valueMultiple} />
+      ) : (
+        <Landing {...chain} valueMultiple={valueMultiple} />
+      )}
+
+      {section !== '' && <Contracts config={config} balance={balance} />}
+    </div>
+  );
+}
+
+

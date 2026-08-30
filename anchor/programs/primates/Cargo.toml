@@ -1,0 +1,41 @@
+[package]
+name = "primates"
+version = "0.1.0"
+description = "Primates desk passes: three-tier Metaplex Core NFTs, each with a derived vault"
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "primates"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "1.1.2"
+# Trimmed to what we call: transfer_checked and ATAs. Measured at no size win —
+# spl-token-2022-interface pulls spl-pod on its own, so dropping
+# `token_2022_extensions` changes nothing on disk. Kept for the smaller dep
+# surface, not for the binary. Don't drop `token_2022`: xStocks are Token-2022.
+# (Unlike mpl-core below, disabling defaults here is safe — no shared-dep trap.)
+anchor-spl = { version = "1.1.2", default-features = false, features = [
+    "token",
+    "token_2022",
+    "associated_token",
+] }
+# Keep default features on: `borsh-v1` is what pins kaigan to the same borsh
+# major as mpl-core. Disabling it splits borsh 0.10 / 1.x and the build fails.
+# Do NOT enable the `anchor` feature — it pulls a second anchor-lang (0.31/0.32)
+# alongside our 1.1.2.
+mpl-core = "0.12.1"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

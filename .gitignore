@@ -1,0 +1,19 @@
+node_modules
+dist
+.vite
+
+# The devnet controller key. Never commit it, never reuse it on mainnet.
+public/dev-wallet.json
+
+# Program build output lives in WSL (~/dev/primates), not here.
+anchor/target
+anchor/.anchor
+
+# The pump.fun deployer key. Mainnet, real money. Never commit.
+creator-wallet.json
+
+# Local RPC override
+.env.local
+
+# Editor/session backups
+.bak-*
