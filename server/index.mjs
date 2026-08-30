@@ -155,8 +155,14 @@ async function proxyRpc(req, res) {
     });
     const body = Buffer.from(await upstream.arrayBuffer());
     return send(res, upstream.status, 'application/json', body);
-  } catch {
-    return send(res, 502, 'text/plain', 'rpc upstream unreachable');
+  } catch (err) {
+    // Say what actually went wrong. A bare "unreachable" sent the last outage
+    // hunting the provider, which was answering fine — the failure was on this
+    // side. The key is stripped because this string reaches the browser.
+    const why = `${err?.cause?.code ?? err?.name ?? 'Error'}: ${err?.message ?? 'unknown'}`
+      .replace(/api-key=[^&\s"']+/gi, 'api-key=***');
+    process.stderr.write(`[rpc] upstream failed — ${why}\n`);
+    return send(res, 502, 'text/plain', `rpc upstream failed — ${why}`);
   }
 }
 
