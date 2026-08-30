@@ -56,7 +56,15 @@ try {
 
 /// Which wallet to drain. Named rather than a file path so a typo cannot
 /// silently reach for the upgrade authority.
-const FROM = { treasury: 'treasury-wallet.json', pot: 'pot-wallet.json' };
+const FROM = {
+  treasury: 'treasury-wallet.json',
+  pot: 'pot-wallet.json',
+  // The program's upgrade authority. Draining it does not give the authority
+  // away — that is the keypair, not the balance — but the program cannot be
+  // patched while this account is empty, and an upgrade needs roughly 2.7 SOL
+  // of buffer. Refund it before any fix.
+  authority: 'mainnet-authority.json',
+};
 // Same -1 guard as above: without it this read the destination address as the
 // wallet name and rejected every plain run.
 const which = (fromIdx >= 0 ? (args[fromIdx + 1] ?? '') : 'treasury').toLowerCase();
@@ -66,7 +74,8 @@ if (!keyFile) {
   process.exit(1);
 }
 
-const envKey = which === 'treasury' ? process.env.TREASURY_SECRET : process.env.POT_SECRET;
+const ENV_KEY = { treasury: 'TREASURY_SECRET', pot: 'POT_SECRET', authority: 'AUTHORITY_SECRET' };
+const envKey = process.env[ENV_KEY[which]];
 const treasury = Keypair.fromSecretKey(
   Uint8Array.from(envKey ? JSON.parse(envKey) : JSON.parse(fs.readFileSync(keyFile, 'utf8'))),
 );
