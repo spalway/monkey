@@ -92,6 +92,47 @@ async function confirmed(signature, timeoutMs = 90_000) {
   }
 }
 
+/// Simulate before asking for a signature.
+///
+/// `sigVerify: false` because the point is to check the transaction would
+/// succeed on-chain while it is still unsigned. `replaceRecentBlockhash` keeps
+/// a slightly stale blockhash from reading as a failure.
+///
+/// Done through a direct RPC call rather than `connection.simulateTransaction`,
+/// which insists on a signed transaction and so cannot answer the question
+/// being asked here.
+async function preflight(transaction) {
+  const wire = transaction
+    .serialize({ requireAllSignatures: false, verifySignatures: false })
+    .toString('base64');
+
+  const res = await fetch(RPC, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'simulateTransaction',
+      params: [wire, {
+        sigVerify: false,
+        replaceRecentBlockhash: true,
+        encoding: 'base64',
+        commitment: 'confirmed',
+      }],
+    }),
+  }).then((r) => r.json());
+
+  const err = res?.result?.value?.err;
+  if (err) {
+    const logs = res.result.value.logs ?? [];
+    // The program's own message is the useful part; the error code is not.
+    const reason = logs.filter((l) => l.includes('Error Message:')).pop()
+      ?? logs.slice(-1)[0]
+      ?? JSON.stringify(err);
+    throw new Error(`would fail on-chain — ${reason}`);
+  }
+}
+
 /// Fallback only. Real values come from deploy.json, because they differ by
 /// cluster: the devnet mocks are 6-decimal classic SPL Token, and mainnet
 /// xStocks are 8-decimal Token-2022. Assuming either one breaks the other.
@@ -100,7 +141,10 @@ const FALLBACK_DECIMALS = 6;
 export function useChain() {
   // The connected wallet, from the adapter. `wallet` is a PublicKey or null —
   // this hook no longer holds a signing key of any kind.
-  const { publicKey: wallet, sendTransaction, connected, disconnect, connect, select, wallets } = useWallet();
+  const {
+    publicKey: wallet, sendTransaction, signTransaction,
+    connected, disconnect, connect, select, wallets,
+  } = useWallet();
   const [balance, setBalance] = useState(null);
   const [config, setConfig] = useState(null);
   const [engine, setEngine] = useState(null);
@@ -339,10 +383,30 @@ export function useChain() {
           mintTx.add(registerDeskIx({ payer: wallet, asset: asset.publicKey }));
         }
 
-        // The asset keypair rides along as an extra signer: Core requires the
-        // new address to sign its own creation, and the wallet cannot do that
-        // for a key it has never seen.
-        const sig = await sendTransaction(mintTx, signingConnection, { signers: [asset] });
+        mintTx.feePayer = wallet;
+        mintTx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+        // Prove it lands before asking anyone to sign it. Phantom warns on
+        // transactions it cannot simulate, and a transaction that would fail
+        // on-chain is one of the things it cannot simulate — so a failure
+        // caught here is both a better error for the holder and one fewer
+        // reason for the wallet to shout.
+        await preflight(mintTx);
+
+        // Phantom signs first, then the asset key.
+        //
+        // Core requires a new asset to sign its own creation, so this
+        // transaction has two signers — and Phantom's own guidance is that
+        // multi-signer transactions must go through signTransaction rather
+        // than signAndSendTransaction, which is what the adapter's
+        // sendTransaction uses. Handed a transaction it cannot fully simulate,
+        // Phantom shows "this dApp could be malicious". Signing first and
+        // adding the throwaway key afterwards gives it something complete to
+        // reason about.
+        const signed = await signTransaction(mintTx);
+        signed.partialSign(asset);
+
+        const sig = await connection.sendRawTransaction(signed.serialize());
         await confirmed(sig);
         say(`minted ${tier.name} Desk${engine ? ` · weight ${tier.weight}` : ''} · ${sig}`);
 
@@ -379,7 +443,7 @@ export function useChain() {
         setBusy(null);
       }
     },
-    [wallet, config, engine, desks.length, refresh],
+    [wallet, config, engine, desks.length, refresh, signTransaction],
   );
 
   /// Move tokens out of one desk's vault into the wallet that holds it.
