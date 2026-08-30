@@ -18,14 +18,32 @@ export const IS_MAINNET = CLUSTER === 'mainnet-beta';
 ///
 /// Setting VITE_RPC still works and skips the proxy — use it only for endpoints
 /// that carry no secret, or a key you have domain-locked with the provider.
-const RAW_RPC = import.meta.env?.VITE_RPC || '/rpc';
+const RAW_RPC = import.meta.env?.VITE_RPC || '';
+
+/// A VITE_RPC that is not an http(s) URL is ignored rather than used.
+///
+/// This exists because of a real failure: an API key was pasted into VITE_RPC
+/// on its own, with no URL around it. The old code treated any non-http value
+/// as a relative path, so it resolved to `https://the-site/<the-key>`, the SPA
+/// fallback answered with index.html, and every chain read died on
+/// "Unexpected token '<'". The endpoint was wrong, the error named JSON, and
+/// nothing pointed at the setting. Falling back to the proxy keeps the site
+/// working, and the warning says which setting to fix.
+const looksLikeUrl = /^https?:\/\//i.test(RAW_RPC);
+
+if (RAW_RPC && !looksLikeUrl && typeof console !== 'undefined') {
+  console.warn(
+    `[primates] VITE_RPC is set to "${RAW_RPC.slice(0, 12)}…", which is not a URL. ` +
+      'Ignoring it and using the /rpc proxy. If that was an API key, it belongs in ' +
+      'HELIUS_RPC as a full endpoint — VITE_ variables are inlined into the public bundle.',
+  );
+}
 
 /// web3.js needs an absolute endpoint, so the same-origin default is resolved
 /// against the page rather than passed through as a path.
-export const RPC =
-  RAW_RPC.startsWith('http') || typeof window === 'undefined'
-    ? RAW_RPC
-    : new URL(RAW_RPC, window.location.origin).toString();
+export const RPC = looksLikeUrl
+  ? RAW_RPC
+  : (typeof window === 'undefined' ? '/rpc' : new URL('/rpc', window.location.origin).toString());
 
 /// Explorer links carry the cluster on devnet and omit it on mainnet, which is
 /// what the explorer expects — a `?cluster=mainnet-beta` query works but reads
