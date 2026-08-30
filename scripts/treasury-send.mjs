@@ -1,7 +1,8 @@
-// Move the treasury's SOL out to a wallet you control.
+// Move a project wallet's SOL out to a wallet you control.
 //
-//   node scripts/treasury-send.mjs <address>           # dry run
-//   node scripts/treasury-send.mjs <address> --send    # actually transfers
+//   node scripts/treasury-send.mjs <address>                  # treasury, dry run
+//   node scripts/treasury-send.mjs <address> --from pot       # pot, dry run
+//   node scripts/treasury-send.mjs <address> --send           # actually transfers
 //
 // For running the buyback and burn by hand instead of on the cron. The treasury
 // fills itself from every mint, so this is the tap.
@@ -27,7 +28,8 @@ loadEnvLocal();
 
 const args = process.argv.slice(2);
 const SEND = args.includes('--send');
-const destination = args.find((a) => !a.startsWith('--'));
+const fromIdx = args.indexOf('--from');
+const destination = args.find((a, i) => !a.startsWith('--') && i !== fromIdx + 1);
 
 const RPC = process.env.HELIUS_RPC ?? process.env.RPC ?? 'https://api.mainnet-beta.solana.com';
 const KEEP_SOL = Number(process.env.TREASURY_KEEP_SOL ?? 0.002);
@@ -47,12 +49,19 @@ try {
   process.exit(1);
 }
 
+/// Which wallet to drain. Named rather than a file path so a typo cannot
+/// silently reach for the upgrade authority.
+const FROM = { treasury: 'treasury-wallet.json', pot: 'pot-wallet.json' };
+const which = (args[args.indexOf('--from') + 1] ?? 'treasury').toLowerCase();
+const keyFile = FROM[which];
+if (!keyFile) {
+  log(`--from must be one of: ${Object.keys(FROM).join(', ')}`);
+  process.exit(1);
+}
+
+const envKey = which === 'treasury' ? process.env.TREASURY_SECRET : process.env.POT_SECRET;
 const treasury = Keypair.fromSecretKey(
-  Uint8Array.from(
-    process.env.TREASURY_SECRET
-      ? JSON.parse(process.env.TREASURY_SECRET)
-      : JSON.parse(fs.readFileSync('treasury-wallet.json', 'utf8')),
-  ),
+  Uint8Array.from(envKey ? JSON.parse(envKey) : JSON.parse(fs.readFileSync(keyFile, 'utf8'))),
 );
 
 const connection = new Connection(RPC, 'confirmed');
@@ -64,7 +73,7 @@ async function main() {
   const fee = 5000;
   const amount = lamports - keep - fee;
 
-  log(`from      ${treasury.publicKey.toBase58()}`);
+  log(`from      ${which}  ${treasury.publicKey.toBase58()}`);
   log(`to        ${to.toBase58()}`);
   log(`balance   ${(lamports / LAMPORTS_PER_SOL).toFixed(4)} SOL`);
 
