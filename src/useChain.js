@@ -86,6 +86,8 @@ export function useChain() {
       .then((deploy) => {
         if (!deploy?.stocks) return;
         setTickers(Object.fromEntries(Object.entries(deploy.stocks).map(([t, m]) => [m, t])));
+        // Drives the landing marquee before the engine account exists.
+        setStockOrder(Object.keys(deploy.stocks));
         setStockOrder(Object.keys(deploy.stocks));
         setChainCfg({
           decimals: deploy.stockDecimals ?? FALLBACK_DECIMALS,
