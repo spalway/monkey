@@ -19,6 +19,19 @@ import {
   VersionedTransaction, LAMPORTS_PER_SOL,
 } from '@solana/web3.js';
 
+/// Load .env.local if it is there. Node does not do this, and having to paste
+/// an RPC URL with a key in it onto every command line is how keys end up in
+/// shell history.
+function loadEnvLocal() {
+  try {
+    for (const line of fs.readFileSync('.env.local', 'utf8').split(/\r?\n/)) {
+      const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^['"]|['"]$/g, '');
+    }
+  } catch { /* no file, use the real environment */ }
+}
+loadEnvLocal();
+
 const SEND = process.argv.includes('--send');
 const RPC = process.env.HELIUS_RPC
   ?? process.env.RPC
