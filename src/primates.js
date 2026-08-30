@@ -314,7 +314,7 @@ export function registerDeskIx({ payer, asset }) {
   });
 }
 
-export function runRoundIx({ cranker, stockMint }) {
+export function runRoundIx({ cranker, stockMint, tokenProgram = TOKEN_PROGRAM_ID }) {
   const engine = enginePda();
   return new TransactionInstruction({
     programId: PROGRAM_ID,
@@ -322,7 +322,7 @@ export function runRoundIx({ cranker, stockMint }) {
       { pubkey: cranker, isSigner: true, isWritable: false },
       { pubkey: engine, isSigner: false, isWritable: true },
       { pubkey: new PublicKey(stockMint), isSigner: false, isWritable: false },
-      { pubkey: ataFor(stockMint, engine), isSigner: false, isWritable: false },
+      { pubkey: ataFor(stockMint, engine, tokenProgram), isSigner: false, isWritable: false },
     ],
     data: Buffer.from(ENGINE_DISCRIMINATORS.runRound),
   });

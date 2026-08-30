@@ -32,6 +32,7 @@ pub struct Settle<'info> {
         mut,
         associated_token::mint = stock_mint,
         associated_token::authority = engine,
+        associated_token::token_program = token_program,
     )]
     pub holding: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -42,6 +43,7 @@ pub struct Settle<'info> {
         mut,
         associated_token::mint = stock_mint,
         associated_token::authority = vault,
+        associated_token::token_program = token_program,
     )]
     pub vault_ata: Box<InterfaceAccount<'info, TokenAccount>>,
 

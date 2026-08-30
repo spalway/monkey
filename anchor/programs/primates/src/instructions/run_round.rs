@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::errors::PrimatesError;
 use crate::events::RoundRun;
@@ -23,11 +23,18 @@ pub struct RunRound<'info> {
 
     pub stock_mint: Box<InterfaceAccount<'info, Mint>>,
 
+    // associated_token::token_program is not optional here. Without it Anchor
+    // derives the address against the classic SPL Token program, so a
+    // Token-2022 mint — which every xStock is — resolves to an account that
+    // does not exist and the constraint fails with ConstraintAssociated.
     #[account(
         associated_token::mint = stock_mint,
         associated_token::authority = engine,
+        associated_token::token_program = token_program,
     )]
     pub holding: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    pub token_program: Interface<'info, TokenInterface>,
 }
 
 pub fn run_round_handler(ctx: Context<RunRound>) -> Result<()> {
