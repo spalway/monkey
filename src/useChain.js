@@ -57,6 +57,9 @@ export function useChain() {
   const [vaultHoldings, setVaultHoldings] = useState({});
   const pending = useRef(new Set());
   const [tickers, setTickers] = useState({});
+  // The rotation as configured, in manifest order. Known from the deploy file,
+  // so the site can name the ten stocks before the engine account exists.
+  const [stockOrder, setStockOrder] = useState([]);
   // Per-cluster token facts, from deploy.json. See FALLBACK_DECIMALS.
   const [chainCfg, setChainCfg] = useState({
     decimals: FALLBACK_DECIMALS,
@@ -83,6 +86,7 @@ export function useChain() {
       .then((deploy) => {
         if (!deploy?.stocks) return;
         setTickers(Object.fromEntries(Object.entries(deploy.stocks).map(([t, m]) => [m, t])));
+        setStockOrder(Object.keys(deploy.stocks));
         setChainCfg({
           decimals: deploy.stockDecimals ?? FALLBACK_DECIMALS,
           tokenProgram: deploy.tokenProgram
@@ -389,7 +393,7 @@ export function useChain() {
   );
 
   return {
-    wallet, balance, config, engine, desks, minted, tickers, busy, log, error, now, mint,
+    wallet, balance, config, engine, desks, minted, tickers, stockOrder, busy, log, error, now, mint,
     vaultHoldings, loadHoldings, sweep,
     justMinted, clearMinted: () => setJustMinted(null),
     // Wallet controls, passed through so the nav button does not have to reach

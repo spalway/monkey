@@ -38,7 +38,8 @@ function Shell({ title, aside, children }) {
 }
 
 export default function Landing({
-  config, balance, engine, minted, tickers, now, valueMultiple, vaultHoldings, loadHoldings,
+  config, balance, engine, minted, tickers, stockOrder = [], now, valueMultiple,
+  vaultHoldings, loadHoldings,
 }) {
   const [animate, toggleMotion, motionOn] = useAnimated();
   // One clock for all three, so they stride and change colour in step.
@@ -46,9 +47,14 @@ export default function Landing({
   // Default colours, the same ones the mint page shows. The clock is still shared
   // so the three stay in step with each other rather than drifting apart.
   const looks = LANDING_WALKS.map((walk) => ({ colors: originalColors(walk) }));
+  // Falls back to the configured stock list when the engine account does not
+  // exist yet. Which ten stocks are in the rotation is a configuration fact,
+  // known from the deploy manifest — the engine only decides which one is next.
+  // Keying the marquee off the engine meant a freshly deployed program showed
+  // an empty strip where the whole pitch is supposed to be.
   const rotationTickers = engine
     ? engine.rotation.map((mint) => tickers[mint.toBase58()]).filter(Boolean)
-    : [];
+    : stockOrder;
   const totalMinted = config ? config.minted.reduce((a, b) => a + b, 0) : null;
   const totalSupply = config ? config.supply.reduce((a, b) => a + b, 0) : null;
 
