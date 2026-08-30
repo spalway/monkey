@@ -3,7 +3,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import App from './App.jsx';
-import { RPC } from './cluster.js';
+import { signingConnection } from './useChain.js';
 import { startWalkingFavicon } from './favicon.js';
 import './styles.css';
 
@@ -21,7 +21,7 @@ const WALLETS = [];
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ConnectionProvider endpoint={RPC}>
+    <ConnectionProvider endpoint={signingConnection.rpcEndpoint}>
       <WalletProvider wallets={WALLETS} autoConnect>
         <App />
       </WalletProvider>

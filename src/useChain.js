@@ -8,7 +8,7 @@ import {
   PublicKey,
   Transaction,
 } from '@solana/web3.js';
-import { DEPLOY_MANIFEST, RPC } from './cluster.js';
+import { DEPLOY_MANIFEST, IS_MAINNET, RPC } from './cluster.js';
 import {
   ataFor,
   createAtaIdempotentIx,
@@ -34,6 +34,23 @@ import {
 // not optional.
 
 export const connection = new Connection(RPC, 'confirmed');
+
+/// A second connection, used only for sending.
+///
+/// The wallet adapter decides which chain to ask the wallet to sign for by
+/// pattern-matching `connection.rpcEndpoint` — and our same-origin /rpc proxy
+/// tells it nothing. Worse, on a dev server the endpoint is
+/// `http://localhost:5173/rpc`, which matches its localnet rule: the wallet was
+/// being asked to sign for a localnet that does not exist, so every simulation
+/// reverted and Phantom reported the transaction as unsafe.
+///
+/// Reads still go through the proxy, so the provider key stays server-side.
+/// Only the blockhash fetch and the send itself use this, and both need an
+/// endpoint the adapter can classify.
+export const signingConnection = new Connection(
+  IS_MAINNET ? 'https://api.mainnet-beta.solana.com' : 'https://api.devnet.solana.com',
+  'confirmed',
+);
 
 /// Wait for a signature by polling, not by subscribing.
 ///
@@ -316,7 +333,7 @@ export function useChain() {
         // The asset keypair rides along as an extra signer: Core requires the
         // new address to sign its own creation, and the wallet cannot do that
         // for a key it has never seen.
-        const sig = await sendTransaction(mintTx, connection, { signers: [asset] });
+        const sig = await sendTransaction(mintTx, signingConnection, { signers: [asset] });
         await confirmed(sig);
         say(`minted ${tier.name} Desk${engine ? ` · weight ${tier.weight}` : ''} · ${sig}`);
 
@@ -403,7 +420,7 @@ export function useChain() {
               }),
             );
           }
-          const sig = await sendTransaction(tx, connection);
+          const sig = await sendTransaction(tx, signingConnection);
           await confirmed(sig);
           say(`swept ${Math.min(i + PER_TX, picks.length)}/${picks.length} · ${sig}`);
         }
