@@ -6,6 +6,7 @@
 
 import { ArrowLeft, TriangleAlert } from 'lucide-react';
 import { ARTICLES, articleBySlug } from './articles.js';
+import { IS_MAINNET } from './cluster.js';
 
 /// Every article's blocks are plain data; this is the only place that knows how
 /// each kind renders. See articles.js for the shapes.
@@ -79,9 +80,13 @@ function ArticleView({ article }) {
         </h1>
 
         <div className="doc article-body">
-          {article.body.map((block, i) => (
-            <Block key={i} block={block} />
-          ))}
+          {/* Blocks flagged devnetOnly describe the test network and would be
+              false on a live site, so they are dropped rather than reworded. */}
+          {article.body
+            .filter((block) => !(IS_MAINNET && block.devnetOnly))
+            .map((block, i) => (
+              <Block key={i} block={block} />
+            ))}
         </div>
       </div>
     </section>
@@ -95,9 +100,9 @@ function ListView() {
         <h1>Changelog.</h1>
         <p className="lede">What has been built, newest first.</p>
         <p>
-          Primates is on devnet. Anything below can change, and the program has
-          been redeployed more than once — treat these as a record of what exists
-          rather than a release history.
+          {IS_MAINNET
+            ? 'A record of what has shipped, and what each release changed.'
+            : 'Primates is on devnet. Anything below can change, and the program has been redeployed more than once — treat these as a record of what exists rather than a release history.'}
         </p>
       </section>
 

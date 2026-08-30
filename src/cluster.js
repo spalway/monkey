@@ -46,3 +46,14 @@ export function explorerTx(signature) {
 /// between a convenience for testing and a private key served to every visitor
 /// of a production site. It is deliberately an allowlist of one.
 export const ALLOW_DEV_WALLET = CLUSTER === 'devnet';
+
+/// What to call the network in user-facing text. Nothing in the UI hardcodes
+/// "Devnet" any more: the word only appears when it is true, so flipping
+/// VITE_CLUSTER removes every test-network disclaimer at once instead of
+/// leaving one behind on a page nobody re-read.
+export const CLUSTER_LABEL = IS_MAINNET ? 'Mainnet' : 'Devnet';
+
+/// Which deploy manifest to load. Removes the "remember to copy the mainnet
+/// file over the devnet one" step, which is exactly the kind of manual swap
+/// that gets missed once and points a live site at test mints.
+export const DEPLOY_MANIFEST = IS_MAINNET ? '/deploy.mainnet.json' : '/deploy.json';

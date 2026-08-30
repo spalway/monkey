@@ -8,7 +8,7 @@ import {
   PublicKey,
   Transaction,
 } from '@solana/web3.js';
-import { ALLOW_DEV_WALLET, RPC } from './cluster.js';
+import { DEPLOY_MANIFEST, RPC } from './cluster.js';
 import {
   ataFor,
   createAtaIdempotentIx,
@@ -77,7 +77,7 @@ export function useChain() {
 
   // mint address -> ticker, written by `npm run stocks`. Cosmetic only.
   useEffect(() => {
-    fetch('/deploy.json')
+    fetch(DEPLOY_MANIFEST)
       .then((r) => (r.ok ? r.json() : null))
       .then((deploy) => {
         if (!deploy?.stocks) return;

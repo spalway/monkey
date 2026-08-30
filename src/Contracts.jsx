@@ -2,7 +2,7 @@
 // section; everywhere else it stays in the footer.
 
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { explorer } from './cluster.js';
+import { explorer, CLUSTER_LABEL } from './cluster.js';
 import { PROGRAM_ID } from './primates.js';
 
 
@@ -38,7 +38,7 @@ export default function Contracts({ config, balance, bare = false }) {
       <>
         <div className="label">
           <span>Contracts</span>
-          <span>Devnet</span>
+          <span>{CLUSTER_LABEL}</span>
         </div>
         {rows}
       </>
@@ -50,7 +50,7 @@ export default function Contracts({ config, balance, bare = false }) {
       <div className="shell">
         <div className="label">
           <span>Contracts</span>
-          <span>Devnet</span>
+          <span>{CLUSTER_LABEL}</span>
         </div>
         {rows}
       </div>

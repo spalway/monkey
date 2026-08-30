@@ -6,7 +6,7 @@
 // measurement rather than from state are marked as measured where they appear.
 
 import { useEffect, useState } from 'react';
-import { explorer } from './cluster.js';
+import { explorer, IS_MAINNET, CLUSTER_LABEL } from './cluster.js';
 import { TriangleAlert } from 'lucide-react';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { ACC_SCALE, PROGRAM_ID, MPL_CORE_PROGRAM_ID, ROTATION_LEN, TIERS } from './primates.js';
@@ -31,7 +31,7 @@ const CHAPTERS = [
   ['sweeping', 'Sweeping'],
   ['selling', 'Selling a desk'],
   ['reference', 'Program reference'],
-  ['status', 'Devnet status'],
+  ['status', IS_MAINNET ? 'Status' : 'Devnet status'],
 ];
 
 /// Which chapter the reader is in.
@@ -362,7 +362,7 @@ export default function Docs({ config, engine, tickers }) {
                   </div>
                 </div>
                 <div className="ticker-card-row">
-                  <span>devnet mint</span>
+                  <span>mint</span>
                   {mintOf[ticker] ? (
                     <a href={explorer(mintOf[ticker])} target="_blank" rel="noreferrer">
                       {`${mintOf[ticker].slice(0, 6)}…${mintOf[ticker].slice(-6)}`}
@@ -394,14 +394,16 @@ export default function Docs({ config, engine, tickers }) {
             are validated by the token program rather than trusted from the caller.
           </p>
 
-          <div className="notice">
-            <TriangleAlert size={16} strokeWidth={2} aria-hidden />
-            <span>
-              On devnet the rotation uses mock mints with the same tickers and six
-              decimals, because xStocks only exist on mainnet. They are classic SPL
-              Token, not Token-2022, and they are worth nothing.
-            </span>
-          </div>
+          {!IS_MAINNET && (
+            <div className="notice">
+              <TriangleAlert size={16} strokeWidth={2} aria-hidden />
+              <span>
+                On devnet the rotation uses mock mints with the same tickers and six
+                decimals, because xStocks only exist on mainnet. They are classic SPL
+                Token, not Token-2022, and they are worth nothing.
+              </span>
+            </div>
+          )}
 
           <p>
             xStocks are not offered to U.S. persons and carry the issuer&apos;s own
@@ -704,11 +706,15 @@ export default function Docs({ config, engine, tickers }) {
         </Chapter>
 
         {/* ------------------------------------------------------------ 13 */}
-        <Chapter id="status" title="13 · Devnet status" aside="What is not done">
+        <Chapter
+          id="status"
+          title={`13 · ${IS_MAINNET ? 'Status' : 'Devnet status'}`}
+          aside="What is not done"
+        >
           <p>
-            Primates is running on devnet. The stocks are mock mints with no value,
-            the SOL is test SOL, and the whole thing can be reset without warning.
-            Known gaps, stated rather than buried:
+            {IS_MAINNET
+              ? 'Known gaps, stated rather than buried:'
+              : 'Primates is running on devnet. The stocks are mock mints with no value, the SOL is test SOL, and the whole thing can be reset without warning. Known gaps, stated rather than buried:'}
           </p>
 
           <ul className="doc-list">
@@ -740,9 +746,13 @@ export default function Docs({ config, engine, tickers }) {
 
           <div className="notice">
             <TriangleAlert size={16} strokeWidth={2} aria-hidden />
+            {/* The offer/advice half is true on any network and stays; only the
+                test-asset half is devnet-specific. */}
             <span>
-              Nothing here is an offer, and none of it is investment advice. Devnet
-              assets have no value and are not redeemable for anything.
+              Nothing here is an offer, and none of it is investment advice.
+              {IS_MAINNET
+                ? ' Tokenised assets carry the issuer’s own eligibility and redemption terms.'
+                : ' Devnet assets have no value and are not redeemable for anything.'}
             </span>
           </div>
         </Chapter>

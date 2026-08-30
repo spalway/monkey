@@ -1,7 +1,7 @@
 {
   "rpc": "https://api.devnet.solana.com",
   "collectionName": "Primates",
-  "uriBase": "http://localhost:5173/meta",
+  "uriBase": "https://primates.app/meta",
   "royaltyBasisPoints": 500,
   "prices": {
     "monkey": 0.1,
@@ -26,5 +26,6 @@
     "minSweepSol": 0.05,
     "protocolWallet": null,
     "potWallet": null
-  }
+  },
+  "_uriBaseNote": "Must be a public origin. Wallets and explorers fetch token metadata from their own servers, so localhost resolves to nothing for everyone but you — which is why nothing shows an image today."
 }

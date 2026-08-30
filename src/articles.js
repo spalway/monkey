@@ -12,6 +12,10 @@
 //
 // `accent` colours the title and the version chip. It defaults to the site
 // yellow, so an article only needs one if it wants to look different.
+//
+// Any block may carry `devnetOnly: true`. Those describe the test network and
+// would be false on a live site, so they are dropped when the cluster is
+// mainnet rather than left to be spotted and reworded later.
 
 export const ARTICLES = [
   {
@@ -74,6 +78,7 @@ export const ARTICLES = [
 
       { h: 'Where this is' },
       {
+        devnetOnly: true,
         list: [
           'Running on devnet. The stocks in the rotation are mock mints with no value and the SOL is test SOL.',
           'Fee sweeping still runs through an operator key. pump.fun\'s fee-sharing config can make the split on-chain and permissionless, which removes that key from the recurring loop — designed, not shipped.',
@@ -83,7 +88,7 @@ export const ARTICLES = [
         ],
       },
       {
-        note: 'Nothing here is an offer, and none of it is investment advice. Devnet assets have no value and are not redeemable for anything.',
+        note: 'Nothing here is an offer, and none of it is investment advice.',
       },
     ],
   },
