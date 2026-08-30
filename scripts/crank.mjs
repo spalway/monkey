@@ -33,6 +33,7 @@ import {
   PROGRAM_ID,
   runRoundIx,
   settleIx,
+  TOKEN_PROGRAM_ID,
   vaultPda,
 } from '../src/primates.js';
 import { config, connection, deployment, wallet } from './shared.mjs';
@@ -72,7 +73,7 @@ async function simulateBuy(stockMint, potSol) {
   const forHolders = potSol * (1 - config.protocolBps / 10_000);
   // Mock fill: 1 SOL buys 10 units of whatever the stock is.
   const amount = BigInt(Math.floor(forHolders * 10 * 10 ** (deploy.stockDecimals ?? 6)));
-  const holding = ataFor(stockMint, engine);
+  const holding = ataFor(stockMint, engine, deploy.tokenProgram ?? TOKEN_PROGRAM_ID);
 
   const tx = new Transaction().add(
     createAssociatedTokenAccountIdempotentInstruction(
@@ -125,11 +126,18 @@ async function settleAll(stockMint, slot) {
         // creating it here means a holder never has to "activate" anything.
         createAssociatedTokenAccountIdempotentInstruction(
           payer.publicKey,
-          ataFor(stockMint, vault),
+          ataFor(stockMint, vault, deploy.tokenProgram ?? TOKEN_PROGRAM_ID),
           vault,
           stockMint,
         ),
-        settleIx({ cranker: payer.publicKey, asset: desk.asset, stockMint }),
+        settleIx({
+          cranker: payer.publicKey,
+          asset: desk.asset,
+          stockMint,
+          // deploy.json is the source of truth: devnet mocks are classic SPL
+          // Token, mainnet xStocks are Token-2022.
+          tokenProgram: deploy.tokenProgram ?? TOKEN_PROGRAM_ID,
+        }),
       );
     }
 
@@ -167,7 +175,7 @@ async function cycle() {
     await simulateBuy(stockMint, pot);
   }
 
-  const holding = await getAccount(conn, ataFor(stockMint, engine)).catch(() => null);
+  const holding = await getAccount(conn, ataFor(stockMint, engine, deploy.tokenProgram ?? TOKEN_PROGRAM_ID)).catch(() => null);
   const arrived = (holding?.amount ?? 0n) - eng.outstanding[slot];
   if (arrived < eng.dustFloor) {
     console.log(`  only ${units(arrived)} ${tickerFor(stockMint)} unallocated — under the floor`);

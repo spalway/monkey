@@ -211,6 +211,24 @@ export async function fetchDesks(connection, owner, collection) {
 // ------------------------------------------------------------- drop engine
 
 export const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+
+/// Token-2022. Mainnet xStocks are all issued under it, the devnet mocks are
+/// classic SPL Token, and the two have different program ids — so an
+/// instruction built for one fails account validation against the other. Every
+/// builder below takes the program rather than assuming, and the caller reads
+/// it out of deploy.json. The on-chain program already accepts either: its
+/// accounts are  over , not .
+/// Token-2022. Mainnet xStocks are all issued under it; the devnet mocks are
+/// classic SPL Token. The two have different program ids, so an instruction
+/// built for one fails account validation against the other — and the
+/// associated-token address is derived from the program id too, so even the
+/// account it points at would be wrong.
+///
+/// Every builder below therefore takes the program instead of assuming it, and
+/// callers read it from deploy.json. The on-chain program already accepts
+/// either: its accounts are InterfaceAccount over TokenInterface, not
+/// Program<Token>.
+export const TOKEN_2022_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
 export const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
   'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
 );
@@ -310,7 +328,7 @@ export function runRoundIx({ cranker, stockMint }) {
   });
 }
 
-export function settleIx({ cranker, asset, stockMint }) {
+export function settleIx({ cranker, asset, stockMint, tokenProgram = TOKEN_PROGRAM_ID }) {
   const engine = enginePda();
   const vault = vaultPda(asset);
   return new TransactionInstruction({
@@ -320,10 +338,10 @@ export function settleIx({ cranker, asset, stockMint }) {
       { pubkey: engine, isSigner: false, isWritable: true },
       { pubkey: deskPda(asset), isSigner: false, isWritable: true },
       { pubkey: new PublicKey(stockMint), isSigner: false, isWritable: false },
-      { pubkey: ataFor(stockMint, engine), isSigner: false, isWritable: true },
+      { pubkey: ataFor(stockMint, engine, tokenProgram), isSigner: false, isWritable: true },
       { pubkey: vault, isSigner: false, isWritable: false },
-      { pubkey: ataFor(stockMint, vault), isSigner: false, isWritable: true },
-      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: ataFor(stockMint, vault, tokenProgram), isSigner: false, isWritable: true },
+      { pubkey: new PublicKey(tokenProgram), isSigner: false, isWritable: false },
     ],
     data: Buffer.from(ENGINE_DISCRIMINATORS.settle),
   });
@@ -471,12 +489,17 @@ export async function fetchDeskStates(connection, assets) {
 /// `getMultipleAccountsInfo` (capped at 100 addresses, so 10 desks x 10 stocks).
 ///
 /// Token account layout: mint(32), owner(32), amount(u64 LE at offset 64).
-export async function fetchHoldingsGrid(connection, vaults, mints, decimals = 6) {
+export async function fetchHoldingsGrid(
+  connection, vaults, mints, decimals = 6, tokenProgram = TOKEN_PROGRAM_ID,
+) {
   if (!vaults.length || !mints.length) return new Map();
 
+  // The associated-token address depends on the token program, so reading a
+  // Token-2022 balance from a classic-derived address does not return zero — it
+  // returns an account that does not exist, and every vault reads as empty.
   const pairs = [];
   for (const vault of vaults) {
-    for (const mint of mints) pairs.push({ vault, mint, ata: ataFor(mint, vault) });
+    for (const mint of mints) pairs.push({ vault, mint, ata: ataFor(mint, vault, tokenProgram) });
   }
 
   const accounts = [];
@@ -578,14 +601,16 @@ const TOKEN_TRANSFER_CHECKED = 12;
 /// SPL Token `TransferChecked`. Checked rather than bare `Transfer` so a wrong
 /// decimals or mint fails in the token program rather than moving the wrong
 /// number of units.
-export function transferCheckedIx({ source, mint, destination, authority, amount, decimals }) {
+export function transferCheckedIx({
+  source, mint, destination, authority, amount, decimals, tokenProgram = TOKEN_PROGRAM_ID,
+}) {
   const data = Buffer.alloc(10);
   data.writeUInt8(TOKEN_TRANSFER_CHECKED, 0);
   data.writeBigUInt64LE(BigInt(amount), 1);
   data.writeUInt8(decimals, 9);
 
   return new TransactionInstruction({
-    programId: TOKEN_PROGRAM_ID,
+    programId: new PublicKey(tokenProgram),
     keys: [
       { pubkey: new PublicKey(source), isSigner: false, isWritable: true },
       { pubkey: new PublicKey(mint), isSigner: false, isWritable: false },
@@ -625,19 +650,22 @@ export function coreExecuteIx({ asset, collection, owner, payer, inner }) {
 }
 
 /// Move `amount` raw units of one stock from a desk's vault to its owner.
-export function sweepIx({ asset, collection, owner, mint, amount, decimals = 6 }) {
+export function sweepIx({
+  asset, collection, owner, mint, amount, decimals = 6, tokenProgram = TOKEN_PROGRAM_ID,
+}) {
   const vault = vaultPda(asset);
   return coreExecuteIx({
     asset,
     collection,
     owner,
     inner: transferCheckedIx({
-      source: ataFor(mint, vault),
+      source: ataFor(mint, vault, tokenProgram),
       mint,
-      destination: ataFor(mint, owner),
+      destination: ataFor(mint, owner, tokenProgram),
       authority: vault,
       amount,
       decimals,
+      tokenProgram,
     }),
   });
 }

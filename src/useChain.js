@@ -12,6 +12,7 @@ import { DEPLOY_MANIFEST, RPC } from './cluster.js';
 import {
   ataFor,
   createAtaIdempotentIx,
+  TOKEN_PROGRAM_ID,
   decodeCoreAsset,
   sweepIx,
   vaultPda,
@@ -59,7 +60,7 @@ export function useChain() {
   // Per-cluster token facts, from deploy.json. See FALLBACK_DECIMALS.
   const [chainCfg, setChainCfg] = useState({
     decimals: FALLBACK_DECIMALS,
-    tokenProgram: null,
+    tokenProgram: TOKEN_PROGRAM_ID,
   });
   const [busy, setBusy] = useState(null);
   const [log, setLog] = useState([]);
@@ -84,7 +85,9 @@ export function useChain() {
         setTickers(Object.fromEntries(Object.entries(deploy.stocks).map(([t, m]) => [m, t])));
         setChainCfg({
           decimals: deploy.stockDecimals ?? FALLBACK_DECIMALS,
-          tokenProgram: deploy.tokenProgram ?? null,
+          tokenProgram: deploy.tokenProgram
+            ? new PublicKey(deploy.tokenProgram)
+            : TOKEN_PROGRAM_ID,
         });
       })
       .catch(() => {});
@@ -100,7 +103,9 @@ export function useChain() {
       if (!want.length) return;
       want.forEach((v) => pending.current.add(v.toBase58()));
       try {
-        const grid = await fetchHoldingsGrid(connection, want, engine.rotation);
+        const grid = await fetchHoldingsGrid(
+          connection, want, engine.rotation, chainCfg.decimals, chainCfg.tokenProgram,
+        );
         setVaultHoldings((prev) => ({ ...prev, ...Object.fromEntries(grid) }));
       } catch {
         // A failed page just leaves those rows unknown; the next render retries.
@@ -108,7 +113,7 @@ export function useChain() {
         want.forEach((v) => pending.current.delete(v.toBase58()));
       }
     },
-    [engine, vaultHoldings],
+    [engine, vaultHoldings, chainCfg],
   );
 
   const refresh = useCallback(async () => {
@@ -163,7 +168,10 @@ export function useChain() {
       // RPC starts returning 429 at around a dozen requests per page load.
       const states = await fetchDeskStates(connection, held.map((d) => d.address));
       const grid = eng
-        ? await fetchHoldingsGrid(connection, held.map((d) => d.vault), eng.rotation)
+        ? await fetchHoldingsGrid(
+            connection, held.map((d) => d.vault), eng.rotation,
+            chainCfg.decimals, chainCfg.tokenProgram,
+          )
         : new Map();
 
       setDesks(
@@ -188,7 +196,7 @@ export function useChain() {
       setError(e.message);
       return null;
     }
-  }, [wallet, chainCfg.decimals]);
+  }, [wallet, chainCfg]);
 
   useEffect(() => {
     refresh();
@@ -323,7 +331,7 @@ export function useChain() {
       try {
         const owner = wallet;
         const mints = picks.map((p) => new PublicKey(p.mint));
-        const atas = mints.map((m) => ataFor(m, owner));
+        const atas = mints.map((m) => ataFor(m, owner, chainCfg.tokenProgram));
 
         // Create only the destination accounts that are actually missing. The
         // idempotent create is safe to repeat, but ten of them will not fit in
@@ -341,7 +349,9 @@ export function useChain() {
           const tx = new Transaction();
           for (let j = i; j < Math.min(i + PER_TX, picks.length); j++) {
             if (!existing[j]) {
-              tx.add(createAtaIdempotentIx({ payer: owner, owner, mint: mints[j] }));
+              tx.add(createAtaIdempotentIx({
+                payer: owner, owner, mint: mints[j], tokenProgram: chainCfg.tokenProgram,
+              }));
             }
             tx.add(
               sweepIx({
@@ -351,6 +361,7 @@ export function useChain() {
                 mint: mints[j],
                 amount: picks[j].raw,
                 decimals: chainCfg.decimals,
+                tokenProgram: chainCfg.tokenProgram,
               }),
             );
           }
@@ -374,7 +385,7 @@ export function useChain() {
         setBusy(null);
       }
     },
-    [wallet, config, refresh],
+    [wallet, config, refresh, chainCfg, sendTransaction],
   );
 
   return {
