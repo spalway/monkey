@@ -16,7 +16,8 @@
     "crank": "node scripts/crank.mjs",
     "fees": "node scripts/collect-fees.mjs",
     "reweight": "node scripts/reweight.mjs",
-    "interval": "node scripts/set-interval.mjs"
+    "interval": "node scripts/set-interval.mjs",
+    "buyback": "node scripts/buyback.mjs"
   },
   "dependencies": {
     "@metaplex-foundation/mpl-core": "^1.10.0",

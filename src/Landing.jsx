@@ -3,6 +3,7 @@ import { explorer } from './cluster.js';
 import Countdown from './Countdown.jsx';
 import MintedList from './MintedList.jsx';
 import Contracts from './Contracts.jsx';
+import TokenAddress from './TokenAddress.jsx';
 import { LogoLoop, StockLogo, brandFor } from './Logos.jsx';
 import { TIERS } from './primates.js';
 import Tier, { TIER_STYLE } from './Tier.jsx';
@@ -38,7 +39,7 @@ function Shell({ title, aside, children }) {
 }
 
 export default function Landing({
-  config, balance, engine, minted, tickers, stockOrder = [], now, valueMultiple,
+  config, balance, engine, minted, tickers, stockOrder = [], tokenMint, now, valueMultiple,
   vaultHoldings, loadHoldings,
 }) {
   const [animate, toggleMotion, motionOn] = useAnimated();
@@ -95,6 +96,8 @@ export default function Landing({
           Protocol revenue buys tokenised real-world assets on a rotation, and each
           desk&apos;s share lands in a vault only its holder can spend from.
         </p>
+
+        <TokenAddress mint={tokenMint} />
 
         <ol className="steps">
           <li>

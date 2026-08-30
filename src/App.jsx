@@ -1,7 +1,7 @@
-// Shell and router. Devnet: signs with a hardcoded controller wallet fetched
-// from /dev-wallet.json, so there is no extension and no approval popup.
+// Shell and router. Signing is the visitor's own wallet, via the adapter.
 
 import { useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { explorer } from './cluster.js';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { PROGRAM_ID, TIERS } from './primates.js';
@@ -128,14 +128,18 @@ export default function App() {
     <div className="page">
       <header className="masthead">
         <div className="nav-shell">
-          <h1 className="wordmark">
+          {/* The wordmark is the way home now, so it carries the arrow rather
+              than a separate Home item repeating what a logo already means.
+              The arrow only appears off the home page: on the home page it
+              would point at the page you are already on. */}
+          <a className="wordmark" href="#/" aria-label="Primates.fun — home">
+            {section !== '' && (
+              <ArrowLeft className="wordmark-back" size={15} strokeWidth={2.6} aria-hidden />
+            )}
             Primates<b>.fun</b>
-          </h1>
+          </a>
 
           <nav className="nav">
-            <a href="#/" className={section === '' ? 'active' : ''}>
-              Home
-            </a>
             <a href="#/mint" className={section === 'mint' ? 'active' : ''}>
               Mint
             </a>

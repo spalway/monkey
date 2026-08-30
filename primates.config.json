@@ -13,7 +13,7 @@
     "ape": 750,
     "kong": 100
   },
-  "treasury": null,
+  "treasury": "F7ivZZGjZKC8vhzL2KgxtScPqwrKkXTYHFUQ2xq6iL1i",
   "protocolBps": 2000,
   "roundIntervalSeconds": 600,
   "roundPotSol": 1,

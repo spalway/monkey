@@ -2851,3 +2851,104 @@ h3 {
     font-size: 24px;
   }
 }
+
+/* ------------------------------------------- wordmark as the way home */
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text);
+  transition: color 0.16s ease;
+}
+
+.wordmark:hover {
+  color: var(--text);
+}
+
+/* Only rendered off the home page. Slides in from the left on hover so the
+   affordance is felt before it is read. */
+.wordmark-back {
+  flex: none;
+  color: var(--accent);
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.wordmark:hover .wordmark-back {
+  transform: translateX(-3px);
+}
+
+/* ------------------------------------------------------ contract address */
+
+/* Near-black rather than the card grey: the address is the one string on the
+   page people are going to copy and paste into a wallet, and it should not
+   look like another panel. */
+.ca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 2px 0;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--radius-sm);
+  background: #050505;
+  color: var(--accent);
+  font-family: var(--display);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.ca:hover {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: #080806;
+  transform: none;
+}
+
+.ca-label {
+  flex: none;
+  color: var(--dim);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* The address itself wraps rather than truncating — an ellipsis in the middle
+   of a contract address is exactly the shape a lookalike hides in. */
+.ca-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  word-break: break-all;
+  font-variant-numeric: tabular-nums;
+}
+
+.ca-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+@media (max-width: 560px) {
+  .ca {
+    flex-wrap: wrap;
+  }
+  .ca-value {
+    flex-basis: 100%;
+    order: 3;
+  }
+}

@@ -20,3 +20,6 @@ creator-wallet.json
 
 # Mainnet program/collection authority. Real money. Never commit.
 mainnet-authority.json
+
+# Treasury: receives mint payments. Real money. Never commit.
+treasury-wallet.json
