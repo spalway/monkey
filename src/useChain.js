@@ -44,11 +44,20 @@ export const connection = new Connection(RPC, 'confirmed');
 /// being asked to sign for a localnet that does not exist, so every simulation
 /// reverted and Phantom reported the transaction as unsafe.
 ///
-/// Reads still go through the proxy, so the provider key stays server-side.
-/// Only the blockhash fetch and the send itself use this, and both need an
-/// endpoint the adapter can classify.
+/// It still points at our proxy. Pointing it at the public cluster endpoint
+/// instead was the obvious fix and the wrong one: api.mainnet-beta.solana.com
+/// answers browser traffic with 403, so every blockhash fetch failed.
+///
+/// The classifier is a plain substring test against the canonical endpoint,
+/// checked before the localhost rule — so naming the chain in an inert query
+/// parameter satisfies it while the request still goes to Helius. The server
+/// routes on pathname and never reads the query.
+const CHAIN_HINT = IS_MAINNET
+  ? 'https://api.mainnet-beta.solana.com'
+  : 'https://api.devnet.solana.com';
+
 export const signingConnection = new Connection(
-  IS_MAINNET ? 'https://api.mainnet-beta.solana.com' : 'https://api.devnet.solana.com',
+  `${RPC}?chain=${CHAIN_HINT}`,
   'confirmed',
 );
 
