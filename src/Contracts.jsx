@@ -1,12 +1,11 @@
 // Program and collection addresses. On the landing page this heads the Live
 // section; everywhere else it stays in the footer.
 
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { explorer, CLUSTER_LABEL } from './cluster.js';
 import { PROGRAM_ID } from './primates.js';
 
 
-export default function Contracts({ config, balance, bare = false }) {
+export default function Contracts({ config, bare = false }) {
   const rows = (
     <div className="rows contracts-rows">
       <div className="row">
@@ -24,10 +23,6 @@ export default function Contracts({ config, balance, bare = false }) {
         ) : (
           <span>—</span>
         )}
-      </div>
-      <div className="row">
-        <span>controller balance</span>
-        <span>{balance === null ? '—' : `${(balance / LAMPORTS_PER_SOL).toFixed(4)} SOL`}</span>
       </div>
     </div>
   );

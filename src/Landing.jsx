@@ -152,7 +152,7 @@ export default function Landing({
       </section>
 
       <Shell>
-        <Contracts config={config} balance={balance} bare />
+        <Contracts config={config} bare />
 
         <div className="live-countdown">
           <span className="live-countdown-label">Next round</span>

@@ -162,7 +162,7 @@ export default function App() {
         <Landing {...chain} valueMultiple={valueMultiple} />
       )}
 
-      {section !== '' && <Contracts config={config} balance={balance} />}
+      {section !== '' && <Contracts config={config} />}
     </div>
   );
 }
